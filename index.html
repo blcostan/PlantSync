@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlantSync | Garden Journal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;600;800&display=swap');
+        body { font-family: 'Outfit', sans-serif; background-color: #f7f6f3; }
+        .bg-leaf { background-color: #065f46; } /* Forest Green */
+        .text-leaf { color: #065f46; }
+        .bg-soil { background-color: #57534e; } /* Warm Soil */
+    </style>
+</head>
+<body class="p-4 md:p-8 pb-20">
+
+    <div class="max-w-4xl mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-emerald-100">
+        <div class="bg-leaf p-8 text-white">
+            <h1 class="text-3xl font-black italic tracking-tight">PlantSync</h1>
+            <p class="text-emerald-200 text-sm font-light">My Journal & Neighborhood Exchange</p>
+        </div>
+
+        <div class="flex border-b border-stone-200">
+            <button onclick="showTab('journal')" id="btn-journal" class="flex-1 p-4 font-bold text-emerald-900 border-b-2 border-emerald-600">My Garden</button>
+            <button onclick="showTab('exchange')" id="btn-exchange" class="flex-1 p-4 font-bold text-stone-400">Community Map</button>
+        </div>
+
+        <div id="tab-journal" class="p-6">
+            <div class="bg-stone-50 p-6 rounded-2xl mb-8">
+                <h2 class="font-bold text-stone-800 mb-4">Add a new plant</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <input type="text" id="p-name" placeholder="Plant Name" class="p-3 rounded-xl border">
+                    <input type="number" id="p-days" placeholder="Watering Interval (Days)" class="p-3 rounded-xl border">
+                    <button onclick="addPlant()" class="bg-leaf text-white font-bold p-3 rounded-xl col-span-full">Save to Journal</button>
+                </div>
+            </div>
+            <div id="garden-list" class="space-y-4">
+                </div>
+        </div>
+
+        <div id="tab-exchange" class="hidden p-6 text-center">
+            <h2 class="font-bold text-stone-800 mb-6">Share a Cutting / Seed</h2>
+            <form id="swapForm" class="text-left space-y-4 bg-stone-50 p-6 rounded-2xl">
+                <input type="text" name="Plant_Offered" placeholder="What are you trading?" class="w-full p-3 rounded-xl border" required>
+                <textarea name="Description" placeholder="Description/Location" class="w-full p-3 rounded-xl border"></textarea>
+                <button type="submit" id="submit-swap" class="bg-soil text-white font-bold w-full p-4 rounded-xl">Post to Community Map</button>
+            </form>
+        </div>
+    </div>
+
+<script>
+    // 1. DATA MANAGEMENT (My Garden)
+    let garden = JSON.parse(localStorage.getItem('myPlants')) || [];
+
+    function addPlant() {
+        const name = document.getElementById('p-name').value;
+        const days = document.getElementById('p-days').value;
+        if(!name || !days) return alert("Fill in the fields!");
+        
+        garden.push({ id: Date.now(), name, days, lastWatered: new Date().toISOString() });
+        document.getElementById('p-name').value = '';
+        document.getElementById('p-days').value = '';
+        saveAndRender();
+    }
+
+    function markWatered(id) {
+        garden = garden.map(p => p.id === id ? {...p, lastWatered: new Date().toISOString()} : p);
+        saveAndRender();
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('myPlants', JSON.stringify(garden));
+        const list = document.getElementById('garden-list');
+        list.innerHTML = garden.map(p => `
+            <div class="flex justify-between items-center p-4 border rounded-2xl border-emerald-100 bg-white">
+                <div>
+                    <h3 class="font-bold text-emerald-900">${p.name}</h3>
+                    <p class="text-xs text-stone-500">Water every ${p.days} days</p>
+                </div>
+                <button onclick="markWatered(${p.id})" class="text-xs bg-emerald-50 text-emerald-700 px-4 py-2 rounded-lg font-bold">Mark Watered</button>
+            </div>
+        `).join('');
+    }
+
+    // 2. EXCHANGE LOGIC (Community)
+    document.getElementById('swapForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('submit-swap');
+        btn.innerText = "Posting...";
+        btn.disabled = true;
+
+        const formData = new FormData(e.target);
+        fetch('https://api.sheetmonkey.io/form/viJWP86DBedeNw6efXaYpk', { method: 'POST', body: formData })
+        .then(() => {
+            alert("Posted to the community exchange!");
+            e.target.reset();
+            btn.innerText = "Post to Community Map";
+            btn.disabled = false;
+        })
+        .catch(err => {
+            alert("Error posting. Check your connection.");
+            btn.disabled = false;
+        });
+    });
+
+    function showTab(tab) {
+        const journal = document.getElementById('tab-journal');
+        const exchange = document.getElementById('tab-exchange');
+        const btnJ = document.getElementById('btn-journal');
+        const btnE = document.getElementById('btn-exchange');
+
+        if(tab === 'journal') {
+            journal.classList.remove('hidden');
+            exchange.classList.add('hidden');
+            btnJ.className = "flex-1 p-4 font-bold text-emerald-900 border-b-2 border-emerald-600";
+            btnE.className = "flex-1 p-4 font-bold text-stone-400";
+        } else {
+            journal.classList.add('hidden');
+            exchange.classList.remove('hidden');
+            btnE.className = "flex-1 p-4 font-bold text-emerald-900 border-b-2 border-emerald-600";
+            btnJ.className = "flex-1 p-4 font-bold text-stone-400";
+        }
+    }
+
+    saveAndRender();
+</script>
+</body>
+</html>
