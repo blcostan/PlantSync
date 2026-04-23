@@ -1,60 +1,52 @@
-<div id="tab-journal" class="p-6">
-    <div class="bg-stone-50 p-6 rounded-2xl mb-8 border border-stone-200">
-        <h2 class="font-bold text-stone-800 mb-4">Plan a New Planting</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <input type="text" id="p-name" placeholder="Crop (e.g. Tomatoes)" class="p-3 rounded-xl border">
-            <input type="number" id="p-days" placeholder="Days to Harvest" class="p-3 rounded-xl border">
-            <button onclick="addPlant()" class="bg-leaf text-white font-bold p-3 rounded-xl col-span-full hover:bg-emerald-800 transition">Add to Planner</button>
-        </div>
-    </div>
-
-    <h2 class="font-bold text-stone-800 mb-4 px-2">Garden Bed Layout</h2>
-    <div id="garden-grid" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-8">
-        </div>
+<div class="bg-emerald-900 p-4 rounded-xl mb-6 text-white">
+    <label class="block text-xs font-bold uppercase mb-2">My Hardiness Zone</label>
+    <select id="user-zone" onchange="saveZone()" class="w-full p-2 rounded-lg text-emerald-900">
+        <option value="">Select your zone...</option>
+        <option value="6">Zone 6</option>
+        <option value="7">Zone 7</option>
+        <option value="8">Zone 8</option>
+    </select>
 </div>
 
 <script>
-    // Updated Add Function
-    function addPlant() {
-        const name = document.getElementById('p-name').value;
-        const days = parseInt(document.getElementById('p-days').value);
-        if(!name || !days) return alert("Fill in the fields!");
+    // Updated Database with Zone Support
+    const plantDatabase = {
+        "Tomato": { sunlight: "Full Sun", zones: [6, 7, 8], companions: ["Basil", "Marigold"] },
+        "Kale": { sunlight: "Partial to Full", zones: [3, 4, 5, 6, 7], companions: ["Onions", "Beets"] },
+        "Lavender": { sunlight: "Full Sun", zones: [5, 6, 7, 8], companions: ["Rosemary", "Thyme"] }
+    };
+
+    // Load saved zone from localStorage
+    window.onload = () => {
+        const savedZone = localStorage.getItem('userZone');
+        if(savedZone) {
+            document.getElementById('user-zone').value = savedZone;
+            updatePlantList();
+        }
+    };
+
+    function saveZone() {
+        const zone = document.getElementById('user-zone').value;
+        localStorage.setItem('userZone', zone);
+        updatePlantList(); // Refresh the dropdown when zone changes
+    }
+
+    function updatePlantList() {
+        const userZone = parseInt(document.getElementById('user-zone').value);
+        const dropdown = document.getElementById('p-select');
         
-        garden.push({ 
-            id: Date.now(), 
-            name, 
-            days, 
-            plantedDate: new Date().getTime() // Store timestamp
+        // Clear current options
+        dropdown.innerHTML = '<option value="">Select a plant...</option>';
+        
+        // Filter and add plants
+        Object.keys(plantDatabase).forEach(plant => {
+            // If no zone selected, show all. If zone selected, check compatibility.
+            if (!userZone || plantDatabase[plant].zones.includes(userZone)) {
+                let opt = document.createElement('option');
+                opt.value = plant;
+                opt.innerHTML = plant;
+                dropdown.appendChild(opt);
+            }
         });
-        saveAndRender();
     }
-
-    function saveAndRender() {
-        localStorage.setItem('myPlants', JSON.stringify(garden));
-        const grid = document.getElementById('garden-grid');
-        
-        grid.innerHTML = garden.map(p => {
-            const now = new Date().getTime();
-            const elapsed = Math.floor((now - p.plantedDate) / (1000 * 60 * 60 * 24));
-            const progress = Math.min((elapsed / p.days) * 100, 100);
-            
-            return `
-            <div class="bg-white p-4 rounded-2xl border border-emerald-100 shadow-sm">
-                <h3 class="font-bold text-emerald-900">${p.name}</h3>
-                <div class="w-full bg-stone-100 rounded-full h-2 mt-2 mb-4">
-                    <div class="bg-emerald-600 h-2 rounded-full" style="width: ${progress}%"></div>
-                </div>
-                <p class="text-xs text-stone-500">${elapsed} / ${p.days} days grown</p>
-                <button onclick="removePlant(${p.id})" class="mt-4 text-xs text-red-400">Remove</button>
-            </div>
-            `;
-        }).join('');
-    }
-
-    function removePlant(id) {
-        garden = garden.filter(p => p.id !== id);
-        saveAndRender();
-    }
-
-    saveAndRender();
 </script>
