@@ -1,60 +1,80 @@
-<div class="max-w-4xl mx-auto p-8 bg-stone-50 rounded-3xl shadow-lg border border-stone-200">
-    <h2 class="text-3xl font-extrabold text-emerald-900 mb-2">Garden Wizard</h2>
-    <p class="text-stone-600 mb-8">Select your conditions to find the perfect crops for your climate.</p>
-    
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <select id="s-zone" class="p-4 rounded-xl border-2 border-emerald-100 focus:border-emerald-500 outline-none">
-            <option value="">Any Zone</option>
-        </select>
-        <select id="s-sun" class="p-4 rounded-xl border-2 border-emerald-100 focus:border-emerald-500 outline-none">
-            <option value="">Any Sun</option>
-            <option value="Full Sun">Full Sun</option>
-            <option value="Partial">Partial</option>
-        </select>
-        <select id="s-soil" class="p-4 rounded-xl border-2 border-emerald-100 focus:border-emerald-500 outline-none">
-            <option value="">Any Soil</option>
-            <option value="Loam">Loam</option>
-            <option value="Sandy">Sandy</option>
-        </select>
-        <button onclick="findPlants()" class="bg-emerald-700 text-white font-bold p-4 rounded-xl hover:bg-emerald-800 transition">Find Plants</button>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>body { font-family: 'Outfit', sans-serif; }</style>
+</head>
+<body class="bg-stone-50 min-h-screen p-6">
+
+<div class="max-w-3xl mx-auto bg-white p-8 rounded-[2rem] shadow-2xl border border-stone-100">
+    <div class="mb-8 border-b border-stone-100 pb-6">
+        <h1 class="text-3xl font-bold text-emerald-900">Garden Wizard</h1>
+        <p class="text-stone-500 mt-2">Find the right plant for your conditions.</p>
     </div>
 
-    <div id="results" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <select id="s-zone" class="p-4 bg-stone-50 rounded-xl border border-stone-200 text-stone-700"></select>
+        
+        <select id="s-sun" class="p-4 bg-stone-50 rounded-xl border border-stone-200 text-stone-700">
+            <option value="">Any Sun Level</option>
+            <option value="Full Sun">Full Sun (6+ hrs)</option>
+            <option value="Partial Sun">Partial Sun (4-6 hrs)</option>
+            <option value="Partial Shade">Partial Shade (Some, no harsh afternoon)</option>
+            <option value="Shade">Shade (<3 hrs)</option>
+        </select>
+
+        <select id="s-soil" class="p-4 bg-stone-50 rounded-xl border border-stone-200 text-stone-700">
+            <option value="">Any Soil Type</option>
+            <option value="Loam">Loam (Balanced/Fertile)</option>
+            <option value="Clay">Clay (Dense/Rich)</option>
+            <option value="Sand">Sand (Well-draining)</option>
+        </select>
+
+        <button onclick="findPlants()" class="bg-emerald-700 text-white font-bold p-4 rounded-xl hover:bg-emerald-800 transition shadow-lg shadow-emerald-200">Find Plants</button>
+    </div>
+
+    <div id="results" class="grid grid-cols-1 gap-4">
+        <p class="text-stone-400 text-center py-10">Select your conditions above to see results.</p>
+    </div>
 </div>
 
 <script>
-    // 1. DYNAMIC ZONE GENERATION
+    // 1. Setup Zones
     const zoneSelect = document.getElementById('s-zone');
-    for (let i = 1; i <= 13; i++) {
-        zoneSelect.innerHTML += `<option value="${i}">Zone ${i}</option>`;
-    }
+    zoneSelect.innerHTML = '<option value="">Any USDA Zone</option>';
+    for(let i=1; i<=13; i++) zoneSelect.innerHTML += `<option value="${i}">Zone ${i}</option>`;
 
-    // 2. THE DATA (Move this to an external 'plants.json' file later)
+    // 2. Updated Database
     const plantDatabase = [
-        { name: "Tomato", zone_min: 5, zone_max: 9, sun: "Full Sun", soil: "Loam", tips: "Classic favorite." },
-        { name: "Lavender", zone_min: 5, zone_max: 9, sun: "Full Sun", soil: "Sandy", tips: "Drought tolerant." }
-        // We will add your full list here!
+        { name: "Tomato", minZ: 5, maxZ: 9, sun: "Full Sun", soil: "Loam", tips: "Needs warmth and rich soil." },
+        { name: "Hosta", minZ: 3, maxZ: 9, sun: "Shade", soil: "Loam", tips: "Loves cool, shady spots." },
+        { name: "Lavender", minZ: 5, maxZ: 9, sun: "Full Sun", soil: "Sand", tips: "Perfect for drainage." }
     ];
 
-    // 3. ROBUST FILTERING
+    // 3. Search Logic
     function findPlants() {
         const z = parseInt(document.getElementById('s-zone').value);
         const sun = document.getElementById('s-sun').value;
         const soil = document.getElementById('s-soil').value;
 
         const results = plantDatabase.filter(p => {
-            const matchesZone = isNaN(z) || (z >= p.zone_min && z <= p.zone_max);
-            const matchesSun = !sun || p.sun === sun;
-            const matchesSoil = !soil || p.soil === soil;
-            return matchesZone && matchesSun && matchesSoil;
+            const zMatch = isNaN(z) || (z >= p.minZ && z <= p.maxZ);
+            const sunMatch = !sun || p.sun === sun;
+            const soilMatch = !soil || p.soil === soil;
+            return zMatch && sunMatch && soilMatch;
         });
 
         document.getElementById('results').innerHTML = results.length > 0 
             ? results.map(p => `
-                <div class="bg-white p-6 rounded-2xl shadow-sm border border-emerald-50">
+                <div class="p-6 bg-emerald-50 rounded-2xl border border-emerald-100">
                     <h3 class="font-bold text-lg text-emerald-900">${p.name}</h3>
-                    <p class="text-sm text-stone-600 mt-2">${p.tips}</p>
+                    <p class="text-sm text-emerald-700 mt-1">${p.sun} | ${p.soil} Soil</p>
+                    <p class="text-sm text-stone-600 mt-2 italic">${p.tips}</p>
                 </div>`).join('')
-            : '<p class="col-span-full text-center text-stone-400 py-10">No matches found. Try widening your search!</p>';
+            : '<p class="text-stone-400 text-center py-10">No plants match those exact conditions. Try loosening your filters!</p>';
     }
 </script>
+</body>
+</html>
