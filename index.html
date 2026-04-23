@@ -1,52 +1,108 @@
-<div class="bg-emerald-900 p-4 rounded-xl mb-6 text-white">
-    <label class="block text-xs font-bold uppercase mb-2">My Hardiness Zone</label>
-    <select id="user-zone" onchange="saveZone()" class="w-full p-2 rounded-lg text-emerald-900">
-        <option value="">Select your zone...</option>
-        <option value="6">Zone 6</option>
-        <option value="7">Zone 7</option>
-        <option value="8">Zone 8</option>
-    </select>
-</div>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlantSync Planner</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
+        body { font-family: 'Outfit', sans-serif; background-color: #fdfcf9; }
+    </style>
+</head>
+<body class="p-4 md:p-10 max-w-2xl mx-auto">
+
+    <div class="mb-8">
+        <h1 class="text-4xl font-black text-emerald-900">Garden Planner</h1>
+        <p class="text-stone-500">Select your zone to see compatible crops.</p>
+    </div>
+
+    <div class="bg-emerald-800 p-6 rounded-3xl mb-8 shadow-lg text-white">
+        <label class="block text-xs uppercase tracking-widest font-bold mb-2 opacity-80">My USDA Hardiness Zone</label>
+        <select id="user-zone" onchange="updatePlantList()" class="w-full p-4 rounded-xl text-emerald-900 font-bold bg-white focus:ring-4 ring-emerald-300 outline-none">
+            <option value="">Select your zone...</option>
+            <option value="6">Zone 6</option>
+            <option value="7">Zone 7</option>
+            <option value="8">Zone 8</option>
+        </select>
+    </div>
+
+    <div class="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm mb-8">
+        <h2 class="font-bold text-stone-800 mb-4">Add a new plant</h2>
+        <select id="p-select" class="w-full p-4 rounded-xl border border-stone-200 mb-4 focus:border-emerald-500 outline-none">
+            <option value="">Select a plant...</option>
+        </select>
+        <button onclick="addPlant()" class="w-full bg-emerald-600 text-white font-bold p-4 rounded-xl hover:bg-emerald-700 transition">Add to Garden</button>
+    </div>
+
+    <div id="garden-grid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        </div>
 
 <script>
-    // Updated Database with Zone Support
+    // The Database
     const plantDatabase = {
-        "Tomato": { sunlight: "Full Sun", zones: [6, 7, 8], companions: ["Basil", "Marigold"] },
-        "Kale": { sunlight: "Partial to Full", zones: [3, 4, 5, 6, 7], companions: ["Onions", "Beets"] },
-        "Lavender": { sunlight: "Full Sun", zones: [5, 6, 7, 8], companions: ["Rosemary", "Thyme"] }
+        "Tomato": { zones: [6, 7, 8] },
+        "Kale": { zones: [3, 4, 5, 6, 7] },
+        "Lavender": { zones: [5, 6, 7, 8] },
+        "Carrots": { zones: [4, 5, 6, 7, 8] }
     };
 
-    // Load saved zone from localStorage
+    let garden = JSON.parse(localStorage.getItem('myPlants')) || [];
+
+    // 1. Initialize
     window.onload = () => {
         const savedZone = localStorage.getItem('userZone');
         if(savedZone) {
             document.getElementById('user-zone').value = savedZone;
-            updatePlantList();
         }
+        updatePlantList();
+        renderGarden();
     };
 
-    function saveZone() {
+    // 2. Filter the Dropdown
+    function updatePlantList() {
         const zone = document.getElementById('user-zone').value;
         localStorage.setItem('userZone', zone);
-        updatePlantList(); // Refresh the dropdown when zone changes
-    }
-
-    function updatePlantList() {
-        const userZone = parseInt(document.getElementById('user-zone').value);
-        const dropdown = document.getElementById('p-select');
         
-        // Clear current options
+        const dropdown = document.getElementById('p-select');
         dropdown.innerHTML = '<option value="">Select a plant...</option>';
         
-        // Filter and add plants
         Object.keys(plantDatabase).forEach(plant => {
-            // If no zone selected, show all. If zone selected, check compatibility.
-            if (!userZone || plantDatabase[plant].zones.includes(userZone)) {
-                let opt = document.createElement('option');
+            if (!zone || plantDatabase[plant].zones.includes(parseInt(zone))) {
+                const opt = document.createElement('option');
                 opt.value = plant;
                 opt.innerHTML = plant;
                 dropdown.appendChild(opt);
             }
         });
     }
+
+    // 3. Add to Planner
+    function addPlant() {
+        const name = document.getElementById('p-select').value;
+        if(!name) return alert("Please select a plant compatible with your zone!");
+        
+        garden.push({ id: Date.now(), name });
+        localStorage.setItem('myPlants', JSON.stringify(garden));
+        renderGarden();
+    }
+
+    // 4. Draw the UI
+    function renderGarden() {
+        const grid = document.getElementById('garden-grid');
+        grid.innerHTML = garden.map(p => `
+            <div class="bg-white p-6 rounded-2xl border border-emerald-100 shadow-sm flex justify-between items-center">
+                <span class="font-bold text-emerald-900">${p.name}</span>
+                <button onclick="removePlant(${p.id})" class="text-stone-300 hover:text-red-500">✕</button>
+            </div>
+        `).join('');
+    }
+
+    function removePlant(id) {
+        garden = garden.filter(p => p.id !== id);
+        localStorage.setItem('myPlants', JSON.stringify(garden));
+        renderGarden();
+    }
 </script>
+</body>
+</html>
