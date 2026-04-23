@@ -1,59 +1,53 @@
-<div class="bg-white p-6 rounded-3xl border border-emerald-100 shadow-sm mb-8">
-    <h2 class="font-bold text-stone-800 mb-4">Add a new plant</h2>
+<div class="bg-white p-8 rounded-3xl border border-stone-100 shadow-xl">
+    <h2 class="text-2xl font-bold text-emerald-900 mb-6">Garden Wizard</h2>
     
-    <select id="p-select" onchange="showCompanionTips()" class="w-full p-4 rounded-xl border border-stone-200 mb-4">
-        <option value="">Select a plant...</option>
-    </select>
-
-    <div id="companion-box" class="hidden bg-emerald-50 border border-emerald-100 p-4 rounded-xl mb-4 text-sm text-emerald-900">
-        <p id="tips-text"></p>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <select id="s-zone" class="p-3 border rounded-xl">
+            <option value="">Zone (All)</option>
+            <option value="6">Zone 6</option><option value="7">Zone 7</option><option value="8">Zone 8</option>
+        </select>
+        <select id="s-sun" class="p-3 border rounded-xl">
+            <option value="">Sunlight (All)</option>
+            <option value="Full Sun">Full Sun</option><option value="Partial">Partial</option>
+        </select>
+        <select id="s-soil" class="p-3 border rounded-xl">
+            <option value="">Soil (All)</option>
+            <option value="Loam">Loam</option><option value="Sandy">Sandy</option>
+        </select>
+        <button onclick="findPlants()" class="bg-emerald-600 text-white font-bold p-3 rounded-xl hover:bg-emerald-700">Find Plants</button>
     </div>
 
-    <button onclick="addPlant()" class="w-full bg-emerald-600 text-white font-bold p-4 rounded-xl hover:bg-emerald-700 transition">Add to Garden</button>
+    <div id="results" class="space-y-3">
+        </div>
 </div>
 
 <script>
-    // Updated Database with Companions
-    const plantDatabase = {
-        "Tomato": { zones: [6, 7, 8], companions: ["Basil", "Marigold", "Carrots"] },
-        "Kale": { zones: [3, 4, 5, 6, 7], companions: ["Onions", "Beets", "Celery"] },
-        "Lavender": { zones: [5, 6, 7, 8], companions: ["Rosemary", "Thyme", "Oregano"] },
-        "Carrots": { zones: [4, 5, 6, 7, 8], companions: ["Tomatoes", "Onions", "Leeks"] }
-    };
+    // The Database: Now structured for filtering
+    const plantDatabase = [
+        { name: "Tomato", zone: 7, sun: "Full Sun", soil: "Loam", tips: "Needs 6+ hours sun" },
+        { name: "Kale", zone: 6, sun: "Partial", soil: "Loam", tips: "Good for cool weather" },
+        { name: "Lavender", zone: 8, sun: "Full Sun", soil: "Sandy", tips: "Low water" }
+    ];
 
-    // NEW: Show tips when plant is selected
-    function showCompanionTips() {
-        const plantName = document.getElementById('p-select').value;
-        const box = document.getElementById('companion-box');
-        const text = document.getElementById('tips-text');
-        
-        if (plantName && plantDatabase[plantName]) {
-            box.classList.remove('hidden');
-            const data = plantDatabase[plantName];
-            text.innerHTML = `<strong>Best companions for ${plantName}:</strong><br>${data.companions.join(", ")}`;
-        } else {
-            box.classList.add('hidden');
-        }
-    }
+    function findPlants() {
+        const z = document.getElementById('s-zone').value;
+        const sun = document.getElementById('s-sun').value;
+        const soil = document.getElementById('s-soil').value;
 
-    // Updated updatePlantList to clear tips if zone changes
-    function updatePlantList() {
-        const zone = document.getElementById('user-zone').value;
-        localStorage.setItem('userZone', zone);
-        document.getElementById('companion-box').classList.add('hidden'); // Reset tips
-        
-        const dropdown = document.getElementById('p-select');
-        dropdown.innerHTML = '<option value="">Select a plant...</option>';
-        
-        Object.keys(plantDatabase).forEach(plant => {
-            if (!zone || plantDatabase[plant].zones.includes(parseInt(zone))) {
-                const opt = document.createElement('option');
-                opt.value = plant;
-                opt.innerHTML = plant;
-                dropdown.appendChild(opt);
-            }
+        const results = plantDatabase.filter(p => {
+            // Only filter if the user actually selected something
+            return (!z || p.zone == z) && 
+                   (!sun || p.sun == sun) && 
+                   (!soil || p.soil == soil);
         });
-    }
 
-    // (Keep the rest of your renderGarden and addPlant functions as they were)
+        const list = document.getElementById('results');
+        list.innerHTML = results.length > 0 
+            ? results.map(p => `
+                <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-100">
+                    <h3 class="font-bold text-emerald-900">${p.name}</h3>
+                    <p class="text-sm text-emerald-700">${p.tips}</p>
+                </div>`).join('')
+            : '<p class="text-stone-400">No plants found matching those specific conditions.</p>';
+    }
 </script>
