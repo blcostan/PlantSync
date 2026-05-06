@@ -87,9 +87,10 @@
             </div>`;
 
         try {
+            // We use .select('*') to see EVERY column name available
             let query = _supabase
                 .from('plants')
-                .select('common_name, scientific_name, growth_habit, zone_min, zone_max, sunlight_tags, soil_types, moisture_needs, image_url');
+                .select('*');
 
             if (!isNaN(z)) {
                 query = query.lte('zone_min', z).gte('zone_max', z);
@@ -104,23 +105,24 @@
             const { data: plants, error } = await query;
             if (error) throw error;
 
-            // --- DEBUG LOG: This lets you see the image links in your browser console (F12) ---
-            console.log("Found plants:", plants);
+            // --- THE TRUTH DETECTOR ---
+            // Press F12 in your browser to see exactly what Supabase sent back
+            console.log("FIRST PLANT DATA:", plants[0]); 
 
             if (plants && plants.length > 0) {
                 resultsDiv.innerHTML = plants.map(p => {
-                    // Clean the URL of any extra spaces or quotes
-                    const cleanImg = p.image_url ? p.image_url.trim() : null;
-                    const fallbackImg = 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
+                    // This checks multiple possible column names just in case
+                    const imgSource = p.image_url || p.Image_URL || p.photo || p.image;
+                    const fallback = 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
 
                     return `
                     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group">
                         <div class="relative h-48 overflow-hidden bg-stone-200">
-                          <img src="${p.image_url ? p.image_url : 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?q=80&w=400'}" 
-     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-     alt="${p.common_name}"
-     onload="console.log('Successfully loaded: ' + this.src)"
-     onerror="console.log('Failed to load: ' + this.src); this.src='https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400'">
+                            <img src="${imgSource ? imgSource.trim() : fallback}" 
+                                 onload="console.log('Loaded: ' + p.common_name)"
+                                 onerror="this.src='${fallback}'; console.log('Failed image for: ' + p.common_name)"
+                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                                 alt="${p.common_name}">
                             <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-emerald-800">
                                 ${p.growth_habit || 'Plant'}
                             </div>
@@ -142,11 +144,15 @@
                     </div>`;
                 }).join('');
             } else {
-                resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 bg-stone-50 rounded-3xl border-2 border-dashed border-stone-200"><p class="text-stone-400 font-medium">No plants match these exact conditions.</p><button onclick="location.reload()" class="mt-4 text-emerald-700 font-bold hover:underline">Clear all filters</button></div>`;
+                resultsDiv.innerHTML = `
+                    <div class="col-span-full text-center py-20 bg-stone-50 rounded-3xl border-2 border-dashed border-stone-200">
+                        <p class="text-stone-400 font-medium">No plants match these exact conditions.</p>
+                        <button onclick="location.reload()" class="mt-4 text-emerald-700 font-bold hover:underline">Clear all filters</button>
+                    </div>`;
             }
         } catch (err) {
             console.error("Database Error:", err);
-            resultsDiv.innerHTML = `<div class="col-span-full text-center py-10 text-red-500"><p class="font-bold">Database Connection Error</p><p class="text-sm">${err.message}</p></div>`;
+            resultsDiv.innerHTML = `<div class="col-span-full text-center py-10 text-red-500 font-bold">Database Error: ${err.message}</div>`;
         }
     }
 </script>
