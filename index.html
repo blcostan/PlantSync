@@ -62,6 +62,7 @@
     const supabaseKey = 'sb_publishable_k6e3Uu9GYAtWv1FNDuZQLg_zFJHX9Kz';
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
+    // 2. Populate Zones
     const zoneSelect = document.getElementById('s-zone');
     if (zoneSelect) {
         for(let i=1; i<=13; i++) {
@@ -78,7 +79,7 @@
         const soil = document.getElementById('s-soil').value;
         const resultsDiv = document.getElementById('results');
 
-        resultsDiv.innerHTML = `<div class="col-span-full text-center py-20"><div class="animate-spin inline-block w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mb-4"></div><p class="text-stone-500">Loading your garden...</p></div>`;
+        resultsDiv.innerHTML = `<p class="col-span-full text-center">Searching...</p>`;
 
         try {
             let query = _supabase.from('plants').select('*');
@@ -89,45 +90,29 @@
             const { data: plants, error } = await query;
             if (error) throw error;
 
+            console.log("Data received from Supabase:", plants); // This helps us debug!
+
             if (plants && plants.length > 0) {
                 resultsDiv.innerHTML = plants.map(p => {
-                    let raw = (p.image_url || p.Image_URL || p.photo || "").trim();
-                    const fallback = 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
-                    let imgSource = fallback;
-
-                    if (raw) {
-                        // If it's a full link already, use it. 
-                        // If it's just a filename, build the Wikipedia path.
-                        if (raw.startsWith('http')) {
-                            imgSource = raw;
-                        } else {
-                            // This matches the Tomato/Sequoia logic that worked
-                            imgSource = `https://commons.wikimedia.org/wiki/Special:FilePath/${raw}?width=500`;
-                        }
-                    }
+                    // This is the simplest possible link builder
+                    let fileName = p.image_url || "";
+                    let imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${fileName.trim()}?width=500`;
 
                     return `
-                    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group">
-                        <div class="relative h-48 overflow-hidden bg-stone-200">
-                            <img src="${imgSource}" 
-                                 onerror="this.src='${fallback}';" 
-                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                        </div>
-                        <div class="p-6">
-                            <h3 class="font-bold text-xl text-stone-900">${p.common_name}</h3>
-                            <p class="text-sm italic text-stone-400 mb-4">${p.scientific_name || ''}</p>
-                            <div class="flex flex-wrap gap-2 mb-4">
-                                <span class="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md uppercase">Zone ${p.zone_min}-${p.zone_max}</span>
-                                <span class="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md uppercase">${p.moisture_needs || 'Medium'}</span>
-                            </div>
-                        </div>
+                    <div class="bg-white rounded-3xl p-4 border border-stone-100 shadow-sm">
+                        <img src="${imgUrl}" 
+                             onerror="this.src='https://placehold.co/400x300?text=Image+Not+Found';"
+                             class="w-full h-48 object-cover rounded-2xl mb-4">
+                        <h3 class="font-bold text-lg">${p.common_name}</h3>
+                        <p class="text-sm text-stone-400 italic">${fileName}</p>
                     </div>`;
                 }).join('');
             } else {
-                resultsDiv.innerHTML = `<p class="col-span-full text-center py-20 text-stone-400">No matches found.</p>`;
+                resultsDiv.innerHTML = `<p class="col-span-full text-center">No plants found.</p>`;
             }
         } catch (err) {
-            resultsDiv.innerHTML = `<div class="col-span-full text-center py-10 text-red-500 font-bold">Error: ${err.message}</div>`;
+            console.error(err);
+            resultsDiv.innerHTML = `<p class="text-red-500">${err.message}</p>`;
         }
     }
 </script>
