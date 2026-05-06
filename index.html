@@ -73,43 +73,37 @@
         }
     }
 
-    async function findplants() {
-        const z = parseInt(document.getElementById('s-zone').value);
-        const sun = document.getElementById('s-sun').value;
-        const soil = document.getElementById('s-soil').value;
-        const resultsDiv = document.getElementById('results');
+   async function findplants() {
+    const z = parseInt(document.getElementById('s-zone').value);
+    const sun = document.getElementById('s-sun').value;
+    const soil = document.getElementById('s-soil').value;
+    const resultsDiv = document.getElementById('results');
 
-        resultsDiv.innerHTML = `<p class="col-span-full text-center">Searching...</p>`;
+    resultsDiv.innerHTML = `<p class="col-span-full text-center">Searching the garden...</p>`;
 
-        try {
-            let query = _supabase.from('plants').select('*');
-            if (!isNaN(z)) query = query.lte('zone_min', z).gte('zone_max', z);
-            if (sun) query = query.contains('sunlight_tags', [sun]);
-            if (soil) query = query.contains('soil_types', [soil]);
+    try {
+        let query = _supabase.from('plants').select('*');
 
-            const { data: plants, error } = await query;
-            if (error) throw error;
+        // 1. Zone Filter (Strict)
+        if (!isNaN(z)) {
+            query = query.lte('zone_min', z).gte('zone_max', z);
+        }
 
-            console.log("Data received from Supabase:", plants); // This helps us debug!
+        // 2. Sunlight Filter (Flexible)
+        // If the user picks a specific sun level, show plants that match OR plants that can handle "Any"
+        if (sun && sun !== "") {
+            query = query.or(`sunlight_tags.cs.{"${sun}"},sunlight_tags.cs.{"Any"}`);
+        }
 
-            if (plants && plants.length > 0) {
-                resultsDiv.innerHTML = plants.map(p => {
-                    // This is the simplest possible link builder
-                    let fileName = p.image_url || "";
-                    let imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${fileName.trim()}?width=500`;
+        // 3. Soil Filter (Flexible)
+        if (soil && soil !== "") {
+            query = query.or(`soil_types.cs.{"${soil}"},soil_types.cs.{"Any"}`);
+        }
 
-                    return `
-                    <div class="bg-white rounded-3xl p-4 border border-stone-100 shadow-sm">
-                        <img src="${imgUrl}" 
-                             onerror="this.src='https://placehold.co/400x300?text=Image+Not+Found';"
-                             class="w-full h-48 object-cover rounded-2xl mb-4">
-                        <h3 class="font-bold text-lg">${p.common_name}</h3>
-                        <p class="text-sm text-stone-400 italic">${fileName}</p>
-                    </div>`;
-                }).join('');
-            } else {
-                resultsDiv.innerHTML = `<p class="col-span-full text-center">No plants found.</p>`;
-            }
+        const { data: plants, error } = await query;
+        if (error) throw error;
+
+        // ... rest of your mapping code (imgUrl, resultsDiv.innerHTML, etc.) ...
         } catch (err) {
             console.error(err);
             resultsDiv.innerHTML = `<p class="text-red-500">${err.message}</p>`;
