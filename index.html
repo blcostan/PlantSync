@@ -58,12 +58,11 @@
     </div>
 </div>
 <script>
-    // 1. Initialize Supabase
     const supabaseUrl = 'https://trsllhyggngbnorfcdip.supabase.co';
     const supabaseKey = 'sb_publishable_k6e3Uu9GYAtWv1FNDuZQLg_zFJHX9Kz';
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // 2. Populate Zones
+    // Populate Zones 1-13
     const zoneSelect = document.getElementById('s-zone');
     if (zoneSelect) {
         for(let i=1; i<=13; i++) {
@@ -74,14 +73,29 @@
         }
     }
 
-    // 3. Search Logic
+    // MAGIC WIKI FINDER: This function asks Wikipedia for the real URL
+    async function getRealWikiUrl(fileName) {
+        try {
+            const response = await fetch(`https://en.wikipedia.org/w/api.php?action=query&titles=File:${fileName}&prop=imageinfo&iiprop=url&iiurlwidth=500&format=json&origin=*`);
+            const data = await response.json();
+            const pages = data.query.pages;
+            const firstPageId = Object.keys(pages)[0];
+            if (firstPageId !== "-1" && pages[firstPageId].imageinfo) {
+                return pages[firstPageId].imageinfo[0].thumburl;
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     async function findplants() {
         const z = parseInt(document.getElementById('s-zone').value);
         const sun = document.getElementById('s-sun').value;
         const soil = document.getElementById('s-soil').value;
-
         const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = `<div class="col-span-full text-center py-20"><div class="animate-spin inline-block w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mb-4"></div><p class="text-stone-500">Retrieving garden data...</p></div>`;
+
+        resultsDiv.innerHTML = `<div class="col-span-full text-center py-20"><div class="animate-spin inline-block w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mb-4"></div><p class="text-stone-500">Summoning the garden...</p></div>`;
 
         try {
             let query = _supabase.from('plants').select('*');
@@ -93,40 +107,45 @@
             if (error) throw error;
 
             if (plants && plants.length > 0) {
-                resultsDiv.innerHTML = plants.map(p => {
+                // We use Promise.all to load all images before showing the cards
+                const plantCards = await Promise.all(plants.map(async (p) => {
                     let raw = (p.image_url || p.Image_URL || p.photo || "").trim();
                     const fallback = 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
-                    let imgUrl = fallback;
+                    let finalImg = fallback;
 
                     if (raw) {
-                        // The "Magic" Redirect URL: This service follows all Wikipedia renames and redirects automatically
-                        let fileName = raw.split('/').pop().replace('File:', '');
-                        imgUrl = `https://commons.wikimedia.org/wiki/Special:Redirect/file/${fileName}?width=500`;
+                        if (raw.startsWith('http') && !raw.includes('wikipedia')) {
+                            finalImg = raw;
+                        } else {
+                            let fileName = raw.split('/').pop().replace('File:', '');
+                            // Ask Wiki API for the real path
+                            const wikiPath = await getRealWikiUrl(fileName);
+                            if (wikiPath) finalImg = wikiPath;
+                        }
                     }
 
                     return `
                     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group">
                         <div class="relative h-48 overflow-hidden bg-stone-200">
-                            <img src="${imgUrl}" 
-                                 onerror="this.src='${fallback}';" 
-                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                                 alt="${p.common_name}">
+                            <img src="${finalImg}" onerror="this.src='${fallback}';" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                         </div>
                         <div class="p-6">
                             <h3 class="font-bold text-xl text-stone-900">${p.common_name}</h3>
                             <p class="text-sm italic text-stone-400 mb-4">${p.scientific_name || ''}</p>
                             <div class="flex flex-wrap gap-2 mb-4">
                                 <span class="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md uppercase">Zone ${p.zone_min}-${p.zone_max}</span>
-                                <span class="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md uppercase">${p.moisture_needs || 'Medium'}</span>
+                                <span class="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md uppercase">${p.moisture_needs || 'Medium'} Water</span>
                             </div>
                         </div>
                     </div>`;
-                }).join('');
+                }));
+
+                resultsDiv.innerHTML = plantCards.join('');
             } else {
-                resultsDiv.innerHTML = `<p class="col-span-full text-center py-20 text-stone-400">No plants found.</p>`;
+                resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 text-stone-400">No plants match those conditions.</div>`;
             }
         } catch (err) {
-            resultsDiv.innerHTML = `<p class="col-span-full text-center py-10 text-red-500 font-bold">Error: ${err.message}</p>`;
+            resultsDiv.innerHTML = `<div class="col-span-full text-center py-10 text-red-500 font-bold">Error: ${err.message}</div>`;
         }
     }
 </script>
