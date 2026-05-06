@@ -58,12 +58,10 @@
     </div>
 </div>
 <script>
-    // 1. Initialize Supabase
     const supabaseUrl = 'https://trsllhyggngbnorfcdip.supabase.co';
     const supabaseKey = 'sb_publishable_k6e3Uu9GYAtWv1FNDuZQLg_zFJHX9Kz';
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // 2. Populate Zones 1-13
     const zoneSelect = document.getElementById('s-zone');
     if (zoneSelect) {
         for(let i=1; i<=13; i++) {
@@ -74,97 +72,83 @@
         }
     }
 
-    // 3. Search Logic
+    // New "Helper" function to get the real Wikipedia Image URL
+    async function getWikiImage(fileName) {
+        if (!fileName) return null;
+        try {
+            const apiTarget = `https://en.wikipedia.org/w/api.php?action=query&titles=File:${fileName}&prop=imageinfo&iiprop=url&iiurlwidth=500&format=json&origin=*`;
+            const response = await fetch(apiTarget);
+            const data = await response.json();
+            const pages = data.query.pages;
+            const firstPage = Object.values(pages)[0];
+            if (firstPage.imageinfo) {
+                return firstPage.imageinfo[0].thumburl;
+            }
+            return null;
+        } catch (e) {
+            return null;
+        }
+    }
+
     async function findplants() {
         const z = parseInt(document.getElementById('s-zone').value);
         const sun = document.getElementById('s-sun').value;
         const soil = document.getElementById('s-soil').value;
-
         const resultsDiv = document.getElementById('results');
-        resultsDiv.innerHTML = `
-            <div class="col-span-full text-center py-20">
-                <div class="animate-spin inline-block w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mb-4"></div>
-                <p class="text-stone-500">Scanning the woods...</p>
-            </div>`;
+
+        resultsDiv.innerHTML = `<div class="col-span-full text-center py-20"><div class="animate-spin inline-block w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mb-4"></div><p class="text-stone-500">Consulting the botanical archives...</p></div>`;
 
         try {
             let query = _supabase.from('plants').select('*');
-
-            if (!isNaN(z)) {
-                query = query.lte('zone_min', z).gte('zone_max', z);
-            }
-            if (sun) {
-                query = query.contains('sunlight_tags', [sun]);
-            }
-            if (soil) {
-                query = query.contains('soil_types', [soil]);
-            }
+            if (!isNaN(z)) query = query.lte('zone_min', z).gte('zone_max', z);
+            if (sun) query = query.contains('sunlight_tags', [sun]);
+            if (soil) query = query.contains('soil_types', [soil]);
 
             const { data: plants, error } = await query;
             if (error) throw error;
 
             if (plants && plants.length > 0) {
-                resultsDiv.innerHTML = plants.map(p => {
-                    
-                    // --- THE MASTER IMAGE REPAIR LOGIC ---
-                    let rawSource = p.image_url || p.Image_URL || p.photo || "";
+                // Pre-fetch all images to avoid the "laptop flicker"
+                const plantCards = await Promise.all(plants.map(async (p) => {
+                    let raw = (p.image_url || p.Image_URL || p.photo || "").trim();
                     const fallback = 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
-                    let imgSource = fallback;
+                    let finalImg = fallback;
 
-                    if (rawSource && rawSource.trim() !== "") {
-                        let cleanName = rawSource.trim();
-
-                        // If it's a Wikipedia/Wikimedia link of any kind
-                        if (cleanName.includes('wikipedia.org') || cleanName.includes('wikimedia.org')) {
-                            // Pull the filename off the end and remove the "File:" prefix if it exists
-                            let fileName = cleanName.split('/').pop().replace('File:', '');
-                            imgSource = `https://commons.wikimedia.org/wiki/Special:FilePath/${fileName}?width=500`;
-                        } 
-                        // If it's a direct URL to another site (starts with http)
-                        else if (cleanName.startsWith('http')) {
-                            imgSource = cleanName;
-                        } 
-                        // If it's just a filename you typed in (e.g. Ficus_carica_01.jpg)
-                        else {
-                            imgSource = `https://commons.wikimedia.org/wiki/Special:FilePath/${cleanName}?width=500`;
+                    if (raw) {
+                        if (raw.startsWith('http') && !raw.includes('wikipedia')) {
+                            finalImg = raw;
+                        } else {
+                            // Extract filename if it was a full link, or use the short name
+                            let fileName = raw.split('/').pop().replace('File:', '');
+                            const wikiUrl = await getWikiImage(fileName);
+                            if (wikiUrl) finalImg = wikiUrl;
                         }
                     }
 
                     return `
                     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group">
                         <div class="relative h-48 overflow-hidden bg-stone-200">
-                            <img src="${imgSource}" 
-                                 onerror="this.src='${fallback}';"
-                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                                 alt="${p.common_name || 'Plant'}">
+                            <img src="${finalImg}" onerror="this.src='${fallback}';" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="${p.common_name}">
                             <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-emerald-800">
                                 ${p.growth_habit || 'Plant'}
                             </div>
                         </div>
                         <div class="p-6">
-                            <h3 class="font-bold text-xl text-stone-900">${p.common_name || 'Unnamed Plant'}</h3>
+                            <h3 class="font-bold text-xl text-stone-900">${p.common_name}</h3>
                             <p class="text-sm italic text-stone-400 mb-4">${p.scientific_name || ''}</p>
-                            
                             <div class="flex flex-wrap gap-2 mb-4">
                                 <span class="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md uppercase">Zone ${p.zone_min || '?'}-${p.zone_max || '?'}</span>
-                                <span class="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md uppercase">${p.moisture_needs || 'Moderate'} Water</span>
-                            </div>
-
-                            <div class="border-t border-stone-50 pt-4">
-                                <p class="text-[11px] text-stone-400 uppercase font-bold tracking-tighter">Sunlight Preference</p>
-                                <p class="text-sm text-stone-600">${p.sunlight_tags ? p.sunlight_tags.join(', ') : 'Varies'}</p>
+                                <span class="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md uppercase">${p.moisture_needs || 'Moderate'}</span>
                             </div>
                         </div>
                     </div>`;
-                }).join('');
+                }));
+
+                resultsDiv.innerHTML = plantCards.join('');
             } else {
-                resultsDiv.innerHTML = `
-                    <div class="col-span-full text-center py-20 bg-stone-50 rounded-3xl border-2 border-dashed border-stone-200">
-                        <p class="text-stone-400 font-medium">No plants match these conditions.</p>
-                    </div>`;
+                resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 bg-stone-50 rounded-3xl border-2 border-dashed border-stone-200"><p class="text-stone-400 font-medium">No plants match these conditions.</p></div>`;
             }
         } catch (err) {
-            console.error("Database Error:", err);
             resultsDiv.innerHTML = `<div class="col-span-full text-center py-10 text-red-500 font-bold">Error: ${err.message}</div>`;
         }
     }
