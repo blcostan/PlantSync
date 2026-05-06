@@ -54,7 +54,7 @@
     </button>
 
     <div id="results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
-        <p class="col-span-full text-center text-stone-400 py-10">Select your parameters above to see results from your database.</p>
+        <p class="col-span-full text-center text-stone-400 py-10">Select your parameters above to see results.</p>
     </div>
 </div>
 
@@ -63,15 +63,13 @@
     const supabaseKey = 'sb_publishable_k6e3Uu9GYAtWv1FNDuZQLg_zFJHX9Kz';
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Populate Zones 1-13
+    // Populate Zones 1-13 immediately on load
     const zoneSelect = document.getElementById('s-zone');
-    if (zoneSelect) {
-        for(let i=1; i<=13; i++) {
-            const opt = document.createElement('option');
-            opt.value = i;
-            opt.innerHTML = `Zone ${i}`;
-            zoneSelect.appendChild(opt);
-        }
+    for(let i=1; i<=13; i++) {
+        const opt = document.createElement('option');
+        opt.value = i;
+        opt.innerHTML = `Zone ${i}`;
+        zoneSelect.appendChild(opt);
     }
 
     async function findplants() {
@@ -85,17 +83,14 @@
         try {
             let query = _supabase.from('plants').select('*');
 
-            // 1. Zone Filter
             if (!isNaN(z)) {
                 query = query.lte('zone_min', z).gte('zone_max', z);
             }
 
-            // 2. Sunlight Filter (Flexible: Search for selected OR "Any")
             if (sun && sun !== "") {
                 query = query.or(`sunlight_tags.cs.{"${sun}"},sunlight_tags.cs.{"Any"}`);
             }
 
-            // 3. Soil Filter (Flexible: Search for selected OR "Any")
             if (soil && soil !== "") {
                 query = query.or(`soil_types.cs.{"${soil}"},soil_types.cs.{"Any"}`);
             }
@@ -105,7 +100,6 @@
 
             if (plants && plants.length > 0) {
                 resultsDiv.innerHTML = plants.map(p => {
-                    // Logic for building the image URL from your short filenames
                     const rawName = (p.image_url || "").trim();
                     const imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${rawName}?width=500`;
                     const fallback = 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
@@ -120,4 +114,21 @@
                         <div class="p-6">
                             <h3 class="font-bold text-xl text-stone-900">${p.common_name}</h3>
                             <p class="text-sm italic text-stone-400 mb-4">${p.scientific_name || ''}</p>
-                            <div class="flex
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded-md uppercase">Zone ${p.zone_min}-${p.zone_max}</span>
+                                <span class="px-2 py-1 bg-stone-100 text-stone-600 text-[10px] font-bold rounded-md uppercase">${p.soil_types?.[0] || 'Flexible'}</span>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } else {
+                resultsDiv.innerHTML = `<p class="col-span-full text-center py-20 text-stone-400">No plants match those specific conditions.</p>`;
+            }
+        } catch (err) {
+            console.error(err);
+            resultsDiv.innerHTML = `<div class="col-span-full text-center text-red-500 p-10 font-bold">Error: ${err.message}</div>`;
+        }
+    }
+</script>
+</body>
+</html>
