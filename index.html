@@ -88,7 +88,6 @@
             </div>`;
 
         try {
-            // Use select('*') so we can see every column name available in your database
             let query = _supabase.from('plants').select('*');
 
             if (!isNaN(z)) {
@@ -104,24 +103,33 @@
             const { data: plants, error } = await query;
             if (error) throw error;
 
-            // --- THE TRUTH DETECTOR ---
-            console.log("SUCCESS! Database returned these plants:", plants);
-            if (plants && plants.length > 0) {
-                console.log("FIRST PLANT DATA (Check column names here):", plants[0]);
-            }
-
             if (plants && plants.length > 0) {
                 resultsDiv.innerHTML = plants.map(p => {
-                    // This checks for image_url or Image_URL or photo
-                    const rawImg = p.image_url || p.Image_URL || p.photo || p.image;
-                    const imgSource = (rawImg && typeof rawImg === 'string') ? rawImg.trim() : null;
+                    // --- THE WIKIPEDIA AUTO-FIXER ---
+                    let imgSource = p.image_url || p.Image_URL || p.photo || p.image;
                     const fallback = 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
+
+                    if (imgSource && typeof imgSource === 'string') {
+                        imgSource = imgSource.trim();
+                        
+                        // If it's a Wikipedia "File:" page link, convert it to a direct path
+                        if (imgSource.includes('wikipedia.org/wiki/File:')) {
+                            const fileName = imgSource.split('File:')[1];
+                            imgSource = `https://commons.wikimedia.org/wiki/Special:FilePath/${fileName}?width=600`;
+                        } 
+                        // If it's a standard Wikimedia link that was 404-ing, this "FilePath" version is more reliable
+                        else if (imgSource.includes('upload.wikimedia.org')) {
+                            const parts = imgSource.split('/');
+                            const fileName = parts[parts.length - 1];
+                            imgSource = `https://commons.wikimedia.org/wiki/Special:FilePath/${fileName}?width=600`;
+                        }
+                    }
 
                     return `
                     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group">
                         <div class="relative h-48 overflow-hidden bg-stone-200">
                             <img src="${imgSource || fallback}" 
-                                 onerror="console.error('IMAGE FAILED TO LOAD:', this.src); this.src='${fallback}';"
+                                 onerror="this.src='${fallback}';"
                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                                  alt="${p.common_name || 'Plant'}">
                             <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-emerald-800">
@@ -145,11 +153,7 @@
                     </div>`;
                 }).join('');
             } else {
-                resultsDiv.innerHTML = `
-                    <div class="col-span-full text-center py-20 bg-stone-50 rounded-3xl border-2 border-dashed border-stone-200">
-                        <p class="text-stone-400 font-medium">No plants match these conditions.</p>
-                        <button onclick="location.reload()" class="mt-4 text-emerald-700 font-bold hover:underline">Clear all filters</button>
-                    </div>`;
+                resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 bg-stone-50 rounded-3xl border-2 border-dashed border-stone-200"><p class="text-stone-400 font-medium">No plants match these conditions.</p></div>`;
             }
         } catch (err) {
             console.error("Database Error:", err);
@@ -157,7 +161,6 @@
         }
     }
 </script>
-
 
 </body>
 </html>
