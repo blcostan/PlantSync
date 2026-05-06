@@ -57,12 +57,13 @@
         <p class="col-span-full text-center text-stone-400 py-10">Select your parameters above to see results from your database.</p>
     </div>
 </div>
+
 <script>
     const supabaseUrl = 'https://trsllhyggngbnorfcdip.supabase.co';
     const supabaseKey = 'sb_publishable_k6e3Uu9GYAtWv1FNDuZQLg_zFJHX9Kz';
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // 2. Populate Zones
+    // Populate Zones 1-13
     const zoneSelect = document.getElementById('s-zone');
     if (zoneSelect) {
         for(let i=1; i<=13; i++) {
@@ -73,42 +74,50 @@
         }
     }
 
-   async function findplants() {
-    const z = parseInt(document.getElementById('s-zone').value);
-    const sun = document.getElementById('s-sun').value;
-    const soil = document.getElementById('s-soil').value;
-    const resultsDiv = document.getElementById('results');
+    async function findplants() {
+        const z = parseInt(document.getElementById('s-zone').value);
+        const sun = document.getElementById('s-sun').value;
+        const soil = document.getElementById('s-soil').value;
+        const resultsDiv = document.getElementById('results');
 
-    resultsDiv.innerHTML = `<p class="col-span-full text-center">Searching the garden...</p>`;
+        resultsDiv.innerHTML = `<div class="col-span-full text-center py-10"><p class="text-emerald-600 animate-pulse font-bold">Consulting the ancient scrolls...</p></div>`;
 
-    try {
-        let query = _supabase.from('plants').select('*');
+        try {
+            let query = _supabase.from('plants').select('*');
 
-        // 1. Zone Filter (Strict)
-        if (!isNaN(z)) {
-            query = query.lte('zone_min', z).gte('zone_max', z);
-        }
+            // 1. Zone Filter
+            if (!isNaN(z)) {
+                query = query.lte('zone_min', z).gte('zone_max', z);
+            }
 
-        // 2. Sunlight Filter (Flexible)
-        // If the user picks a specific sun level, show plants that match OR plants that can handle "Any"
-        if (sun && sun !== "") {
-            query = query.or(`sunlight_tags.cs.{"${sun}"},sunlight_tags.cs.{"Any"}`);
-        }
+            // 2. Sunlight Filter (Flexible: Search for selected OR "Any")
+            if (sun && sun !== "") {
+                query = query.or(`sunlight_tags.cs.{"${sun}"},sunlight_tags.cs.{"Any"}`);
+            }
 
-        // 3. Soil Filter (Flexible)
-        if (soil && soil !== "") {
-            query = query.or(`soil_types.cs.{"${soil}"},soil_types.cs.{"Any"}`);
-        }
+            // 3. Soil Filter (Flexible: Search for selected OR "Any")
+            if (soil && soil !== "") {
+                query = query.or(`soil_types.cs.{"${soil}"},soil_types.cs.{"Any"}`);
+            }
 
-        const { data: plants, error } = await query;
-        if (error) throw error;
+            const { data: plants, error } = await query;
+            if (error) throw error;
 
-        // ... rest of your mapping code (imgUrl, resultsDiv.innerHTML, etc.) ...
-        } catch (err) {
-            console.error(err);
-            resultsDiv.innerHTML = `<p class="text-red-500">${err.message}</p>`;
-        }
-    }
-</script>
-</body>
-</html>
+            if (plants && plants.length > 0) {
+                resultsDiv.innerHTML = plants.map(p => {
+                    // Logic for building the image URL from your short filenames
+                    const rawName = (p.image_url || "").trim();
+                    const imgUrl = `https://commons.wikimedia.org/wiki/Special:FilePath/${rawName}?width=500`;
+                    const fallback = 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
+
+                    return `
+                    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group">
+                        <div class="relative h-48 overflow-hidden bg-stone-200">
+                            <img src="${imgUrl}" 
+                                 onerror="this.src='${fallback}';" 
+                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        </div>
+                        <div class="p-6">
+                            <h3 class="font-bold text-xl text-stone-900">${p.common_name}</h3>
+                            <p class="text-sm italic text-stone-400 mb-4">${p.scientific_name || ''}</p>
+                            <div class="flex
