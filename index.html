@@ -106,20 +106,17 @@
             if (plants && plants.length > 0) {
                 resultsDiv.innerHTML = plants.map(p => {
    // --- THE WIKIPEDIA AUTO-FIXER ---
-let imgSource = p.image_url || p.Image_URL || p.photo || p.image;
+// Inside your plants.map section
+let imgSource = p.image_url || p.Image_URL || p.photo;
 const fallback = 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
 
-if (imgSource && typeof imgSource === 'string') {
+if (imgSource) {
     imgSource = imgSource.trim();
-    
-    // If it's a Wikipedia link OR just a filename (like 'plant.jpg')
-    if (imgSource.includes('wikipedia.org') || (!imgSource.includes('http') && imgSource.includes('.'))) {
-        // Extract just the filename
-        let fileName = imgSource.split('/').pop().replace('File:', '');
-        // Use the Special:FilePath service
-        imgSource = `https://commons.wikimedia.org/wiki/Special:FilePath/${fileName}?width=500`;
+    // If it's a filename, wrap it. If it's already a full link, leave it be.
+    if (!imgSource.startsWith('http')) {
+        imgSource = `https://commons.wikimedia.org/wiki/Special:FilePath/${imgSource}?width=500`;
     }
-}  
+}
                     return `
                     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group">
                         <div class="relative h-48 overflow-hidden bg-stone-200">
