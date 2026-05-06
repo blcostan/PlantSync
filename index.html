@@ -106,25 +106,21 @@
             if (plants && plants.length > 0) {
                 resultsDiv.innerHTML = plants.map(p => {
                     // --- THE WIKIPEDIA AUTO-FIXER ---
-                    let imgSource = p.image_url || p.Image_URL || p.photo || p.image;
-                    const fallback = 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
+        let imgSource = p.image_url || p.Image_URL || p.photo || p.image;
+const fallback = 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
 
-                    if (imgSource && typeof imgSource === 'string') {
-                        imgSource = imgSource.trim();
-                        
-                        // If it's a Wikipedia "File:" page link, convert it to a direct path
-                        if (imgSource.includes('wikipedia.org/wiki/File:')) {
-                            const fileName = imgSource.split('File:')[1];
-                            imgSource = `https://commons.wikimedia.org/wiki/Special:FilePath/${fileName}?width=600`;
-                        } 
-                        // If it's a standard Wikimedia link that was 404-ing, this "FilePath" version is more reliable
-                        else if (imgSource.includes('upload.wikimedia.org')) {
-                            const parts = imgSource.split('/');
-                            const fileName = parts[parts.length - 1];
-                            imgSource = `https://commons.wikimedia.org/wiki/Special:FilePath/${fileName}?width=600`;
-                        }
-                    }
-
+if (imgSource && typeof imgSource === 'string') {
+    imgSource = imgSource.trim();
+    
+    // Check if it's any kind of Wikipedia/Wikimedia link
+    if (imgSource.includes('wikipedia.org')) {
+        // Extract the filename regardless of the URL structure
+        let fileName = imgSource.split('/').pop().replace('File:', '');
+        
+        // Use the Special:FilePath service with a forced width for better loading
+        imgSource = `https://commons.wikimedia.org/wiki/Special:FilePath/${fileName}?width=500`;
+    }
+}      
                     return `
                     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group">
                         <div class="relative h-48 overflow-hidden bg-stone-200">
