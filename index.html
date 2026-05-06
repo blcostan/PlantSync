@@ -105,22 +105,21 @@
 
             if (plants && plants.length > 0) {
                 resultsDiv.innerHTML = plants.map(p => {
-                    // --- THE WIKIPEDIA AUTO-FIXER ---
-        let imgSource = p.image_url || p.Image_URL || p.photo || p.image;
+   // --- THE WIKIPEDIA AUTO-FIXER ---
+let imgSource = p.image_url || p.Image_URL || p.photo || p.image;
 const fallback = 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
 
 if (imgSource && typeof imgSource === 'string') {
     imgSource = imgSource.trim();
     
-    // Check if it's any kind of Wikipedia/Wikimedia link
-    if (imgSource.includes('wikipedia.org')) {
-        // Extract the filename regardless of the URL structure
+    // If it's a Wikipedia link OR just a filename (like 'plant.jpg')
+    if (imgSource.includes('wikipedia.org') || (!imgSource.includes('http') && imgSource.includes('.'))) {
+        // Extract just the filename
         let fileName = imgSource.split('/').pop().replace('File:', '');
-        
-        // Use the Special:FilePath service with a forced width for better loading
+        // Use the Special:FilePath service
         imgSource = `https://commons.wikimedia.org/wiki/Special:FilePath/${fileName}?width=500`;
     }
-}      
+}  
                     return `
                     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group">
                         <div class="relative h-48 overflow-hidden bg-stone-200">
