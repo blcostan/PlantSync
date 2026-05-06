@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Garden Wizard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
     <style>body { font-family: 'Outfit', sans-serif; }</style>
 </head>
@@ -23,15 +24,15 @@
         
         <select id="s-sun" class="p-4 bg-stone-50 rounded-xl border border-stone-200 text-stone-700 w-full focus:ring-2 ring-emerald-500 outline-none">
             <option value="">Any Sun Level</option>
-            <option value="full sunlight">Full Sunlight</option>
-            <option value="partial sunlight">Partial Sunlight</option>
-            <option value="indirect sunlight">Indirect Sunlight</option>
+            <option value="full sun">Full Sun</option>
+            <option value="partial sun">Partial Sun</option>
+            <option value="indirect sun">Indirect Sun</option>
         </select>
 
         <select id="s-soil" class="p-4 bg-stone-50 rounded-xl border border-stone-200 text-stone-700 w-full focus:ring-2 ring-emerald-500 outline-none">
             <option value="">Any Soil Type</option>
-            <option value="sandy">Sandy</option>
-            <option value="loamy">Loamy</option>
+            <option value="sandy">Sand</option>
+            <option value="loamy">Loam</option>
             <option value="well-drained">Well-drained</option>
             <option value="clay">Clay</option>
             <option value="acidic">Acidic</option>
@@ -46,6 +47,17 @@
 </div>
 
 <script>
+    <script>
+    // 1. Initialize the connection
+    const supabaseUrl = 'https://trsllhyggngbnorfcdip.supabase.co'; // Cleaned URL
+    const supabaseKey = 'sb_publishable_k6e3Uu9GYAtWv1FNDuZQLg_zFJHX9Kz';
+    
+    const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    // 2. Populate the Zone Dropdown
+    const zoneSelect = document.getElementById('s-zone');
+    for(let i=1; i<=13; i++) zoneSelect.innerHTML += `<option value="${i}">Zone ${i}</option>`;
+</script>
     // 1. Populate Zones
     const zoneSelect = document.getElementById('s-zone');
     for(let i=1; i<=13; i++) zoneSelect.innerHTML += `<option value="${i}">Zone ${i}</option>`;
