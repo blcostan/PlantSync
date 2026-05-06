@@ -57,7 +57,6 @@
         <p class="col-span-full text-center text-stone-400 py-10">Select your parameters above to see results from your database.</p>
     </div>
 </div>
-
 <script>
     // 1. Initialize Supabase
     const supabaseUrl = 'https://trsllhyggngbnorfcdip.supabase.co';
@@ -66,11 +65,13 @@
 
     // 2. Populate Zones 1-13
     const zoneSelect = document.getElementById('s-zone');
-    for(let i=1; i<=13; i++) {
-        const opt = document.createElement('option');
-        opt.value = i;
-        opt.innerHTML = `Zone ${i}`;
-        zoneSelect.appendChild(opt);
+    if (zoneSelect) {
+        for(let i=1; i<=13; i++) {
+            const opt = document.createElement('option');
+            opt.value = i;
+            opt.innerHTML = `Zone ${i}`;
+            zoneSelect.appendChild(opt);
+        }
     }
 
     // 3. Search Logic
@@ -87,10 +88,8 @@
             </div>`;
 
         try {
-            // We use .select('*') to see EVERY column name available
-            let query = _supabase
-                .from('plants')
-                .select('*');
+            // Use select('*') so we can see every column name available in your database
+            let query = _supabase.from('plants').select('*');
 
             if (!isNaN(z)) {
                 query = query.lte('zone_min', z).gte('zone_max', z);
@@ -106,33 +105,35 @@
             if (error) throw error;
 
             // --- THE TRUTH DETECTOR ---
-            // Press F12 in your browser to see exactly what Supabase sent back
-            console.log("FIRST PLANT DATA:", plants[0]); 
+            console.log("SUCCESS! Database returned these plants:", plants);
+            if (plants && plants.length > 0) {
+                console.log("FIRST PLANT DATA (Check column names here):", plants[0]);
+            }
 
             if (plants && plants.length > 0) {
                 resultsDiv.innerHTML = plants.map(p => {
-                    // This checks multiple possible column names just in case
-                    const imgSource = p.image_url || p.Image_URL || p.photo || p.image;
+                    // This checks for image_url or Image_URL or photo
+                    const rawImg = p.image_url || p.Image_URL || p.photo || p.image;
+                    const imgSource = (rawImg && typeof rawImg === 'string') ? rawImg.trim() : null;
                     const fallback = 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
 
                     return `
                     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group">
                         <div class="relative h-48 overflow-hidden bg-stone-200">
-                            <img src="${imgSource ? imgSource.trim() : fallback}" 
-                                 onload="console.log('Loaded: ' + p.common_name)"
-                                 onerror="this.src='${fallback}'; console.log('Failed image for: ' + p.common_name)"
+                            <img src="${imgSource || fallback}" 
+                                 onerror="console.error('IMAGE FAILED TO LOAD:', this.src); this.src='${fallback}';"
                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                                 alt="${p.common_name}">
+                                 alt="${p.common_name || 'Plant'}">
                             <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-emerald-800">
                                 ${p.growth_habit || 'Plant'}
                             </div>
                         </div>
                         <div class="p-6">
-                            <h3 class="font-bold text-xl text-stone-900">${p.common_name}</h3>
-                            <p class="text-sm italic text-stone-400 mb-4">${p.scientific_name}</p>
+                            <h3 class="font-bold text-xl text-stone-900">${p.common_name || 'Unnamed Plant'}</h3>
+                            <p class="text-sm italic text-stone-400 mb-4">${p.scientific_name || ''}</p>
                             
                             <div class="flex flex-wrap gap-2 mb-4">
-                                <span class="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md uppercase">Zone ${p.zone_min}-${p.zone_max}</span>
+                                <span class="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md uppercase">Zone ${p.zone_min || '?'}-${p.zone_max || '?'}</span>
                                 <span class="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md uppercase">${p.moisture_needs || 'Moderate'} Water</span>
                             </div>
 
@@ -146,16 +147,17 @@
             } else {
                 resultsDiv.innerHTML = `
                     <div class="col-span-full text-center py-20 bg-stone-50 rounded-3xl border-2 border-dashed border-stone-200">
-                        <p class="text-stone-400 font-medium">No plants match these exact conditions.</p>
+                        <p class="text-stone-400 font-medium">No plants match these conditions.</p>
                         <button onclick="location.reload()" class="mt-4 text-emerald-700 font-bold hover:underline">Clear all filters</button>
                     </div>`;
             }
         } catch (err) {
             console.error("Database Error:", err);
-            resultsDiv.innerHTML = `<div class="col-span-full text-center py-10 text-red-500 font-bold">Database Error: ${err.message}</div>`;
+            resultsDiv.innerHTML = `<div class="col-span-full text-center py-10 text-red-500 font-bold">Error: ${err.message}</div>`;
         }
     }
 </script>
+
 
 </body>
 </html>
