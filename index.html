@@ -87,12 +87,10 @@
             </div>`;
 
         try {
-            // Build Query
             let query = _supabase
                 .from('plants')
                 .select('common_name, scientific_name, growth_habit, zone_min, zone_max, sunlight_tags, soil_types, moisture_needs, image_url');
 
-            // Apply Filters
             if (!isNaN(z)) {
                 query = query.lte('zone_min', z).gte('zone_max', z);
             }
@@ -104,19 +102,26 @@
             }
 
             const { data: plants, error } = await query;
-
             if (error) throw error;
 
-            // Render Results
+            // --- DEBUG LOG: This lets you see the image links in your browser console (F12) ---
+            console.log("Found plants:", plants);
+
             if (plants && plants.length > 0) {
-                resultsDiv.innerHTML = plants.map(p => `
+                resultsDiv.innerHTML = plants.map(p => {
+                    // Clean the URL of any extra spaces or quotes
+                    const cleanImg = p.image_url ? p.image_url.trim() : null;
+                    const fallbackImg = 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
+
+                    return `
                     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm hover:shadow-xl transition-all overflow-hidden group">
-                        <div class="relative h-48 overflow-hidden">
-                            <img src="${p.image_url || 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400'}" 
+                        <div class="relative h-48 overflow-hidden bg-stone-200">
+                            <img src="${cleanImg || fallbackImg}" 
+                                 onerror="this.onerror=null;this.src='${fallbackImg}';"
                                  class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                                  alt="${p.common_name}">
                             <div class="absolute top-3 right-3 bg-white/90 backdrop-blur px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest text-emerald-800">
-                                ${p.growth_habit}
+                                ${p.growth_habit || 'Plant'}
                             </div>
                         </div>
                         <div class="p-6">
@@ -125,7 +130,7 @@
                             
                             <div class="flex flex-wrap gap-2 mb-4">
                                 <span class="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded-md uppercase">Zone ${p.zone_min}-${p.zone_max}</span>
-                                <span class="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md uppercase">${p.moisture_needs} Water</span>
+                                <span class="px-2 py-1 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-md uppercase">${p.moisture_needs || 'Moderate'} Water</span>
                             </div>
 
                             <div class="border-t border-stone-50 pt-4">
@@ -133,23 +138,14 @@
                                 <p class="text-sm text-stone-600">${p.sunlight_tags ? p.sunlight_tags.join(', ') : 'Varies'}</p>
                             </div>
                         </div>
-                    </div>
-                `).join('');
-            } else {
-                resultsDiv.innerHTML = `
-                    <div class="col-span-full text-center py-20 bg-stone-50 rounded-3xl border-2 border-dashed border-stone-200">
-                        <p class="text-stone-400 font-medium">No plants match these exact conditions.</p>
-                        <button onclick="location.reload()" class="mt-4 text-emerald-700 font-bold hover:underline">Clear all filters</button>
                     </div>`;
+                }).join('');
+            } else {
+                resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 bg-stone-50 rounded-3xl border-2 border-dashed border-stone-200"><p class="text-stone-400 font-medium">No plants match these exact conditions.</p><button onclick="location.reload()" class="mt-4 text-emerald-700 font-bold hover:underline">Clear all filters</button></div>`;
             }
-
         } catch (err) {
             console.error("Database Error:", err);
-            resultsDiv.innerHTML = `
-                <div class="col-span-full text-center py-10 text-red-500">
-                    <p class="font-bold">Database Connection Error</p>
-                    <p class="text-sm">${err.message}</p>
-                </div>`;
+            resultsDiv.innerHTML = `<div class="col-span-full text-center py-10 text-red-500"><p class="font-bold">Database Connection Error</p><p class="text-sm">${err.message}</p></div>`;
         }
     }
 </script>
