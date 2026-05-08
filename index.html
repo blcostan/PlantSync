@@ -98,22 +98,19 @@ async function findplants() {
     const soil = document.getElementById('s-soil').value;
     const habit = document.getElementById('s-habit').value; 
 
-    resultsDiv.innerHTML = `<p class="col-span-full text-center py-10 text-emerald-600 animate-pulse">Filtering plants...</p>`;
+    resultsDiv.innerHTML = `<p class="col-span-full text-center py-10 text-emerald-600 animate-pulse">Scanning database...</p>`;
 
     try {
+        // We cast the JSONB columns to TEXT during the search to prevent the "Syntax Error"
         let query = _supabase.from('plants').select('*');
 
-        // Number filters
         if (!isNaN(z)) query = query.lte('zone_min', z).gte('zone_max', z);
-        
-        // Exact text filter
         if (habit) query = query.eq('growth_habit', habit);
         
-        // JSONB filters - wrapping in try/catch logic isn't possible in the query, 
-        // so we use the standard .contains() which works once Step 1 is run.
-        if (region) query = query.contains('native_regions', [region]);
-        if (sun) query = query.contains('sunlight_tags', [sun]);
-        if (soil) query = query.contains('soil_types', [soil]);
+        // Using .ilike allows us to search text even if the database thinks it's JSON
+        if (region) query = query.ilike('native_regions', `%${region}%`);
+        if (sun) query = query.ilike('sunlight_tags', `%${sun}%`);
+        if (soil) query = query.ilike('soil_types', `%${soil}%`);
 
         const { data: plants, error } = await query;
         if (error) throw error;
@@ -123,38 +120,38 @@ async function findplants() {
                 const rawImg = (p.image_url || "").trim().replace(/\s/g, '_');
                 const imgUrl = rawImg ? `https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/${encodeURIComponent(rawImg)}&width=500` : 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
                 
-                // Helper to safely parse regions for display
-                let displayRegions = "";
-                try {
-                    displayRegions = Array.isArray(p.native_regions) ? p.native_regions.join(', ') : p.native_regions;
-                } catch(e) { displayRegions = "Varies"; }
+                // This cleans the display text even if it has [" "] or extra quotes
+                const formatList = (val) => {
+                    if (!val) return '';
+                    let str = typeof val === 'string' ? val : JSON.stringify(val);
+                    return str.replace(/[\[\]"']/g, '').replace(/,,/g, ',').trim();
+                };
 
                 return `
-                <div class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-md transition-shadow">
+                <div class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden flex flex-col h-full">
                     <div class="h-48 bg-stone-200">
                         <img src="${imgUrl}" onerror="this.src='https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';" class="w-full h-full object-cover">
                     </div>
                     <div class="p-6 flex flex-col flex-grow">
                         <div class="flex justify-between text-[10px] font-bold text-emerald-600 mb-1 uppercase tracking-wider">
                             <span>${p.growth_habit || 'Plant'}</span>
-                            <span class="text-stone-400">${displayRegions}</span>
+                            <span class="text-stone-400">${formatList(p.native_regions)}</span>
                         </div>
                         <h3 class="font-bold text-xl text-stone-900 leading-tight mb-1">${p.common_name}</h3>
                         <p class="text-sm italic text-stone-400 mb-4">${p.scientific_name || ''}</p>
-                        <div class="mt-auto flex flex-wrap gap-2">
+                        <div class="mt-auto flex gap-2">
                             <span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded uppercase">Zone ${p.zone_min}-${p.zone_max}</span>
                         </div>
                     </div>
                 </div>`;
             }).join('');
         } else {
-            resultsDiv.innerHTML = `<p class="col-span-full text-center py-20 text-stone-400">No plants match those filters.</p>`;
+            resultsDiv.innerHTML = `<p class="col-span-full text-center py-20 text-stone-400">No plants found matching those criteria.</p>`;
         }
     } catch (err) {
-        console.error(err);
+        console.error("Full Error Context:", err);
         resultsDiv.innerHTML = `<div class="col-span-full text-center text-red-500 bg-red-50 p-6 rounded-xl font-mono text-xs border border-red-100">
-            <strong>DATA FORMAT ERROR:</strong><br>${err.message}<br><br>
-            <em>Please run the Scrubber SQL provided to fix the quotes in your database.</em>
+            <strong>SYSTEM ERROR:</strong><br>${err.message}
         </div>`;
     }
 }
