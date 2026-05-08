@@ -103,15 +103,16 @@ async function findplants() {
     try {
         let query = _supabase.from('plants').select('*');
 
-        // 1. Standard Number/Text Filters
+        // Number Filters
         if (!isNaN(z)) query = query.lte('zone_min', z).gte('zone_max', z);
+        
+        // Category Filter
         if (habit) query = query.eq('growth_habit', habit);
         
-        // 2. The "Cast to Text" Search (The Fix for your Error)
-        // This converts the jsonb column to text so .ilike works!
-        if (region) query = query.filter('native_regions', 'custom', `native_regions::text ilike '%${region}%'`);
-        if (sun)    query = query.filter('sunlight_tags', 'custom', `sunlight_tags::text ilike '%${sun}%'`);
-        if (soil)   query = query.filter('soil_types', 'custom', `soil_types::text ilike '%${soil}%'`);
+        // Text Search Filters (These only work if columns are TEXT type)
+        if (region) query = query.ilike('native_regions', `%${region}%`);
+        if (sun)    query = query.ilike('sunlight_tags', `%${sun}%`);
+        if (soil)   query = query.ilike('soil_types', `%${soil}%`);
 
         const { data: plants, error } = await query;
         if (error) throw error;
@@ -121,11 +122,8 @@ async function findplants() {
                 const rawImg = (p.image_url || "").trim().replace(/\s/g, '_');
                 const imgUrl = rawImg ? `https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/${encodeURIComponent(rawImg)}&width=500` : 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
                 
-                const formatList = (val) => {
-                    if (!val) return '';
-                    let str = (typeof val === 'string') ? val : JSON.stringify(val);
-                    return str.replace(/[\[\]"']/g, '').replace(/,,/g, ',').trim();
-                };
+                // Cleans up any messy brackets/quotes from the display
+                const cleanDisplay = (val) => val ? val.toString().replace(/[\[\]"']/g, '') : '';
 
                 return `
                 <div class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-xl transition-all">
@@ -135,7 +133,7 @@ async function findplants() {
                     <div class="p-6 flex flex-col flex-grow">
                         <div class="flex justify-between items-start text-[10px] font-bold text-emerald-600 mb-2 uppercase tracking-wider">
                             <span>${p.growth_habit || 'Plant'}</span>
-                            <span class="text-stone-400 text-right ml-4">${formatList(p.native_regions)}</span>
+                            <span class="text-stone-400 text-right ml-4">${cleanDisplay(p.native_regions)}</span>
                         </div>
                         <h3 class="font-bold text-xl text-stone-900 leading-tight mb-1">${p.common_name}</h3>
                         <p class="text-sm italic text-stone-400 mb-4">${p.scientific_name || ''}</p>
@@ -147,7 +145,7 @@ async function findplants() {
                 </div>`;
             }).join('');
         } else {
-            resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 text-stone-400">No plants match those filters.</div>`;
+            resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 text-stone-400">No plants found. Try adjusting your filters!</div>`;
         }
     } catch (err) {
         console.error(err);
