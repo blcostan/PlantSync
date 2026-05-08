@@ -106,4 +106,72 @@
 
             // Hardiness Zone Logic
             if (!isNaN(z)) {
-                query = query
+                query = query.lte('zone_min', z).gte('zone_max', z);
+            }
+
+            // Growth Habit Logic
+            if (habit) {
+                query = query.eq('growth_habit', habit);
+            }
+            
+            /* SAFE SEARCH METHOD:
+               Using .ilike instead of .contains. This works regardless of whether 
+               your columns are 'text' or 'jsonb' and ignores formatting errors.
+            */
+            if (region) query = query.ilike('native_regions', `%${region}%`);
+            if (sun) query = query.ilike('sunlight_tags', `%${sun}%`);
+            if (soil) query = query.ilike('soil_types', `%${soil}%`);
+
+            const { data: plants, error } = await query;
+            if (error) throw error;
+
+            if (plants && plants.length > 0) {
+                resultsDiv.innerHTML = plants.map(p => {
+                    // Image URL Handling
+                    const rawImg = (p.image_url || "").trim().replace(/\s/g, '_');
+                    const imgUrl = rawImg ? `https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/${encodeURIComponent(rawImg)}&width=500` : 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
+                    
+                    // Display Text Cleaning (strips out brackets and quotes if they appear)
+                    const cleanText = (val) => {
+                        if (!val) return '';
+                        return (typeof val === 'string') ? val.replace(/[\[\]"']/g, '') : val.join(', ');
+                    };
+
+                    return `
+                    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden flex flex-col h-full">
+                        <div class="h-48 bg-stone-200">
+                            <img src="${imgUrl}" 
+                                 onerror="this.src='https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';" 
+                                 class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-6 flex flex-col flex-grow">
+                            <div class="flex justify-between text-[10px] font-bold text-emerald-600 mb-1 uppercase tracking-wider">
+                                <span>${p.growth_habit || 'Plant'}</span>
+                                <span class="text-stone-400">Native: ${cleanText(p.native_regions)}</span>
+                            </div>
+                            <h3 class="font-bold text-xl text-stone-900 leading-tight mb-1">${p.common_name}</h3>
+                            <p class="text-sm italic text-stone-400 mb-4">${p.scientific_name || ''}</p>
+                            
+                            <div class="mt-auto flex flex-wrap gap-2">
+                                <span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded uppercase">Zone ${p.zone_min}-${p.zone_max}</span>
+                                <span class="px-2 py-1 bg-blue-50 text-blue-700 text-[10px] font-bold rounded uppercase flex items-center">
+                                    <span class="mr-1">💧</span> ${p.moisture_needs || 'Medium'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } else {
+                resultsDiv.innerHTML = `<p class="col-span-full text-center py-20 text-stone-400">No plants match those specific conditions.</p>`;
+            }
+        } catch (err) {
+            console.error(err);
+            resultsDiv.innerHTML = `<div class="col-span-full text-center text-red-500 bg-red-50 p-6 rounded-xl font-mono text-xs border border-red-100">
+                <strong>SEARCH ERROR:</strong><br>${err.message}<br><br>
+                <em>Try refreshing the page. If this persists, ensure your table is named 'plants' and public read access is enabled.</em>
+            </div>`;
+        }
+    }
+</script>
+</body>
+</html>
