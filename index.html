@@ -98,35 +98,24 @@ async function findplants() {
     const soil = document.getElementById('s-soil').value;
     const habit = document.getElementById('s-habit').value; 
 
-    resultsDiv.innerHTML = `<p class="col-span-full text-center py-10 text-emerald-600 animate-pulse">Searching...</p>`;
+    resultsDiv.innerHTML = `<p class="col-span-full text-center py-10 text-emerald-600 animate-pulse">Filtering plants...</p>`;
 
     try {
         let query = _supabase.from('plants').select('*');
 
-        // 1. Zone Filter (Numbers)
-        if (!isNaN(z)) {
-            query = query.lte('zone_min', z).gte('zone_max', z);
-        }
-
-        // 2. Growth Habit (Text)
-        if (habit) {
-            query = query.eq('growth_habit', habit);
-        }
+        // Number filters
+        if (!isNaN(z)) query = query.lte('zone_min', z).gte('zone_max', z);
         
-        // 3. JSONB Filters (Using .contains for jsonb columns)
-        // This is the "correct" way for jsonb {} columns
-        if (region) {
-            query = query.contains('native_regions', [region]);
-        }
-        if (sun) {
-            query = query.contains('sunlight_tags', [sun]);
-        }
-        if (soil) {
-            query = query.contains('soil_types', [soil]);
-        }
+        // Exact text filter
+        if (habit) query = query.eq('growth_habit', habit);
+        
+        // JSONB filters - wrapping in try/catch logic isn't possible in the query, 
+        // so we use the standard .contains() which works once Step 1 is run.
+        if (region) query = query.contains('native_regions', [region]);
+        if (sun) query = query.contains('sunlight_tags', [sun]);
+        if (soil) query = query.contains('soil_types', [soil]);
 
         const { data: plants, error } = await query;
-        
         if (error) throw error;
 
         if (plants && plants.length > 0) {
@@ -134,11 +123,14 @@ async function findplants() {
                 const rawImg = (p.image_url || "").trim().replace(/\s/g, '_');
                 const imgUrl = rawImg ? `https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/${encodeURIComponent(rawImg)}&width=500` : 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
                 
-                // Helper to display regions nicely
-                const displayRegions = Array.isArray(p.native_regions) ? p.native_regions.join(', ') : '';
+                // Helper to safely parse regions for display
+                let displayRegions = "";
+                try {
+                    displayRegions = Array.isArray(p.native_regions) ? p.native_regions.join(', ') : p.native_regions;
+                } catch(e) { displayRegions = "Varies"; }
 
                 return `
-                <div class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden flex flex-col h-full">
+                <div class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-md transition-shadow">
                     <div class="h-48 bg-stone-200">
                         <img src="${imgUrl}" onerror="this.src='https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';" class="w-full h-full object-cover">
                     </div>
@@ -150,7 +142,7 @@ async function findplants() {
                         <h3 class="font-bold text-xl text-stone-900 leading-tight mb-1">${p.common_name}</h3>
                         <p class="text-sm italic text-stone-400 mb-4">${p.scientific_name || ''}</p>
                         <div class="mt-auto flex flex-wrap gap-2">
-                            <span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded">Zone ${p.zone_min}-${p.zone_max}</span>
+                            <span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded uppercase">Zone ${p.zone_min}-${p.zone_max}</span>
                         </div>
                     </div>
                 </div>`;
@@ -161,8 +153,8 @@ async function findplants() {
     } catch (err) {
         console.error(err);
         resultsDiv.innerHTML = `<div class="col-span-full text-center text-red-500 bg-red-50 p-6 rounded-xl font-mono text-xs border border-red-100">
-            <strong>DATABASE ERROR:</strong><br>${err.message}<br><br>
-            <em>If you see "operator does not exist", ensure your columns are actually JSONB in Supabase.</em>
+            <strong>DATA FORMAT ERROR:</strong><br>${err.message}<br><br>
+            <em>Please run the Scrubber SQL provided to fix the quotes in your database.</em>
         </div>`;
     }
 }
