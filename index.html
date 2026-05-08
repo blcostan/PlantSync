@@ -99,57 +99,11 @@
         const soil = document.getElementById('s-soil').value;
         const habit = document.getElementById('s-habit').value; 
 
-        resultsDiv.innerHTML = `<p class="col-span-full text-center py-10 text-emerald-600 animate-pulse">Searching...</p>`;
+        resultsDiv.innerHTML = `<p class="col-span-full text-center py-10 text-emerald-600 animate-pulse">Searching the gardens...</p>`;
 
         try {
             let query = _supabase.from('plants').select('*');
 
-            if (!isNaN(z)) query = query.lte('zone_min', z).gte('zone_max', z);
-            if (habit) query = query.eq('growth_habit', habit);
-            
-            // Filter for Region (Looking inside JSONB array)
-            if (region) query = query.contains('native_regions', [region]);
-
-            // Filter for Sunlight and Soil
-            if (sun) query = query.contains('sunlight_tags', [sun]);
-            if (soil) query = query.contains('soil_types', [soil]);
-
-            const { data: plants, error } = await query;
-            if (error) throw error;
-
-            if (plants && plants.length > 0) {
-                resultsDiv.innerHTML = plants.map(p => {
-                    const rawImg = (p.image_url || "").trim().replace(/\s/g, '_');
-                    const imgUrl = rawImg ? `https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/${encodeURIComponent(rawImg)}&width=500` : 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
-                    const regions = Array.isArray(p.native_regions) ? p.native_regions.join(', ') : '';
-
-                    return `
-                    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden">
-                        <div class="h-48 bg-stone-200"><img src="${imgUrl}" onerror="this.src='https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';" class="w-full h-full object-cover"></div>
-                        <div class="p-6">
-                            <div class="flex justify-between text-[10px] font-bold text-emerald-600 mb-1 uppercase">
-                                <span>${p.growth_habit || ''}</span>
-                                <span class="text-stone-400">${regions}</span>
-                            </div>
-                            <h3 class="font-bold text-xl text-stone-900">${p.common_name}</h3>
-                            <p class="text-sm italic text-stone-400 mb-4">${p.scientific_name || ''}</p>
-                            <div class="flex gap-2">
-                                <span class="px-2 py-1 bg-emerald-50 text-emerald-700 text-[10px] font-bold rounded">Zone ${p.zone_min}-${p.zone_max}</span>
-                            </div>
-                        </div>
-                    </div>`;
-                }).join('');
-            } else {
-                resultsDiv.innerHTML = `<p class="col-span-full text-center py-20 text-stone-400">No matches found.</p>`;
-            }
-        } catch (err) {
-            console.error(err);
-            resultsDiv.innerHTML = `<div class="col-span-full text-center text-red-500 bg-red-50 p-6 rounded-xl font-mono text-xs">
-                <strong>DATABASE ERROR:</strong><br>${err.message}<br><br>
-                <em>Hint: Check if 'native_regions' is set to JSONB type in Supabase.</em>
-            </div>`;
-        }
-    }
-</script>
-</body>
-</html>
+            // Hardiness Zone Logic
+            if (!isNaN(z)) {
+                query = query
