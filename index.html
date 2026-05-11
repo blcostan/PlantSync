@@ -17,19 +17,19 @@
             <h1 class="text-5xl font-black text-emerald-950 tracking-tighter italic">PlantSync <span class="not-italic text-emerald-500 font-light uppercase text-2xl tracking-widest ml-2">Restoration</span></h1>
             <p class="text-stone-400 font-medium tracking-wide uppercase text-[10px] mt-2">Native Ecosystem Analysis & Selection Tool</p>
         </div>
-        <div class="bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-widest">
-            Project Zone: NC / SE Region
+        <div class="bg-emerald-50 px-4 py-2 rounded-xl border border-emerald-100 text-emerald-700 text-xs font-bold uppercase tracking-widest text-center">
+            Region: North Carolina / Southeast
         </div>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-8">
         <div>
             <label class="block text-[10px] font-black text-emerald-900 uppercase mb-2 ml-1 tracking-widest">Site Hydrology</label>
-            <select id="s-moisture" class="p-4 bg-stone-50 rounded-2xl border-2 border-stone-100 text-stone-700 w-full focus:border-emerald-500 outline-none transition-all font-semibold">
-                <option value="">All Hydrologies</option>
-                <option value="Wet">Wetland (Obligate)</option>
-                <option value="Medium">Mesic (Facultative)</option>
-                <option value="Dry">Upland (Dry)</option>
+            <select id="s-hydrology" class="p-4 bg-stone-50 rounded-2xl border-2 border-stone-100 text-stone-700 w-full focus:border-emerald-500 outline-none transition-all font-semibold">
+                <option value="">Any Hydrology</option>
+                <option value="Wetland">Wetland (Hydric)</option>
+                <option value="Mesic">Mesic (Moist)</option>
+                <option value="Upland">Upland (Dry)</option>
             </select>
         </div>
 
@@ -37,8 +37,8 @@
             <label class="block text-[10px] font-black text-emerald-900 uppercase mb-2 ml-1 tracking-widest">Salt Tolerance</label>
             <select id="s-salt" class="p-4 bg-stone-50 rounded-2xl border-2 border-stone-100 text-stone-700 w-full focus:border-emerald-500 outline-none transition-all font-semibold">
                 <option value="">Any Tolerance</option>
-                <option value="High">High (Coastal/Marsh)</option>
-                <option value="Moderate">Moderate (Brackish)</option>
+                <option value="High">High (Salt Marsh)</option>
+                <option value="Moderate">Moderate (Coastal)</option>
                 <option value="Low/None">Low/None (Inland)</option>
             </select>
         </div>
@@ -62,88 +62,7 @@
                 <option value="Herb">Ground Cover (Herb)</option>
             </select>
         </div>
-    </div>
-    
-    <button onclick="findplants()" class="w-full bg-emerald-900 text-white font-black p-5 rounded-3xl hover:bg-black transition shadow-xl active:scale-95 text-lg uppercase tracking-widest mb-12">
-        Analyze Ecosystem Compatibility
-    </button>
 
-    <div id="results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <div class="col-span-full text-center py-20 opacity-20">
-            <p class="text-5xl mb-4">🌿</p>
-            <p class="font-bold">Enter site parameters to generate a restoration list.</p>
-        </div>
-    </div>
-</div>
-
-<script>
-    const supabaseUrl = 'https://trsllhyggngbnorfcdip.supabase.co';
-    const supabaseKey = 'sb_publishable_k6e3Uu9GYAtWv1FNDuZQLg_zFJHX9Kz';
-    const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
-    async function findplants() {
-        const resultsDiv = document.getElementById('results');
-        const moisture = document.getElementById('s-moisture').value;
-        const sun = document.getElementById('s-sun').value;
-        const habit = document.getElementById('s-habit').value;
-        const salt = document.getElementById('s-salt').value;
-
-        resultsDiv.innerHTML = `<div class="col-span-full text-center py-20"><div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-emerald-900 border-t-transparent"></div></div>`;
-
-        try {
-            let query = _supabase.from('plants').select('*');
-
-            if (moisture) query = query.eq('moisture_needs', moisture);
-            if (sun) query = query.ilike('sunlight_tags', `%${sun}%`);
-            if (habit) query = query.eq('growth_habit', habit);
-            if (salt) query = query.eq('salt_tolerance', salt);
-
-            const { data: plants, error } = await query;
-            if (error) throw error;
-
-            if (plants && plants.length > 0) {
-                resultsDiv.innerHTML = plants.map(p => {
-                    const imgUrl = p.image_url ? p.image_url : 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
-                    
-                    return `
-                    <div class="bg-white rounded-[2rem] border border-stone-100 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-2xl transition-all group">
-                        <div class="h-60 bg-stone-100 overflow-hidden relative">
-                            <span class="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-md text-emerald-900 text-[8px] font-black px-3 py-1.5 rounded-full uppercase tracking-tighter shadow-sm border border-emerald-100">
-                                ${p.growth_habit || 'Species'}
-                            </span>
-                            <img src="${imgUrl}" onerror="this.src='https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';" 
-                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
-                        </div>
-                        <div class="p-8 flex flex-col flex-grow">
-                            <div class="mb-4">
-                                <h3 class="font-black text-2xl text-stone-900 leading-tight">${p.common_name}</h3>
-                                <p class="text-sm italic text-emerald-700/60 font-medium">${p.scientific_name}</p>
-                            </div>
-                            
-                            <div class="mt-auto grid grid-cols-2 gap-3 border-t border-stone-50 pt-6">
-                                <div class="bg-stone-50 p-3 rounded-xl">
-                                    <p class="text-[8px] font-black text-stone-400 uppercase tracking-widest mb-1">Hydrology</p>
-                                    <p class="text-[10px] font-bold text-stone-700 uppercase">${p.moisture_needs || 'Mesic'}</p>
-                                </div>
-                                <div class="bg-stone-50 p-3 rounded-xl">
-                                    <p class="text-[8px] font-black text-stone-400 uppercase tracking-widest mb-1">Salt Tolerance</p>
-                                    <p class="text-[10px] font-bold text-stone-700 uppercase">${p.salt_tolerance || 'None'}</p>
-                                </div>
-                                <div class="bg-stone-50 p-3 rounded-xl col-span-2">
-                                    <p class="text-[8px] font-black text-stone-400 uppercase tracking-widest mb-1">Native Range Status</p>
-                                    <p class="text-[9px] font-bold text-emerald-800 uppercase truncate">${p.native_regions ? p.native_regions.toString().replace(/[\[\]"']/g, '') : 'Local'}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
-                }).join('');
-            } else {
-                resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 text-stone-400 font-medium">No species found matching these ecological criteria.</div>`;
-            }
-        } catch (err) {
-            resultsDiv.innerHTML = `<div class="col-span-full bg-red-50 text-red-600 p-8 rounded-3xl font-mono text-xs border border-red-100">${err.message}</div>`;
-        }
-    }
-</script>
-</body>
-</html>
+        <div>
+            <label class="block text-[10px] font-black text-emerald-900 uppercase mb-2 ml-1 tracking-widest">Hardiness Zone</label>
+            <select id="s-zone" class="p-4 bg-stone-50 rounded-2xl border-2 border-stone-100 text-stone-
