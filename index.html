@@ -84,55 +84,68 @@
         <p class="col-span-full text-center text-stone-400 py-20 font-medium italic border-2 border-dashed border-stone-100 rounded-3xl">Adjust filters and click search to analyze the database.</p>
     </div>
 </div>
-
 <script>
-    // Supabase Credentials
     const supabaseUrl = 'https://trsllhyggngbnorfcdip.supabase.co';
     const supabaseKey = 'sb_publishable_k6e3Uu9GYAtWv1FNDuZQLg_zFJHX9Kz';
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // Explicitly link the button to the function
     document.getElementById('search-btn').addEventListener('click', findplants);
 
     async function findplants() {
-        console.log("Search initiated..."); // Debugging log
         const resultsDiv = document.getElementById('results');
         
-        // Capture Values
         const hydro = document.getElementById('s-hydrology').value;
         const salt = document.getElementById('s-salt').value;
         const sun = document.getElementById('s-sun').value;
         const habit = document.getElementById('s-habit').value;
-        const z = parseInt(document.getElementById('s-zone').value);
+        const zValue = document.getElementById('s-zone').value;
+        const z = zValue ? parseInt(zValue) : NaN;
 
         resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 text-emerald-700 font-bold animate-pulse uppercase tracking-widest">Running Site Analysis...</div>`;
 
         try {
             let query = _supabase.from('plants').select('*');
 
-            // Apply logic-based filters
             if (hydro) query = query.eq('Hydrology', hydro);
             if (salt)  query = query.eq('salt_tolerance', salt);
             if (habit) query = query.eq('growth_habit', habit);
             if (sun)   query = query.ilike('sunlight_tags', `%${sun}%`);
             
-            // For zone, check if selected zone is between min and max
             if (!isNaN(z)) {
                 query = query.lte('zone_min', z).gte('zone_max', z);
             }
 
             const { data: plants, error } = await query;
-            
             if (error) throw error;
 
             if (plants && plants.length > 0) {
                 resultsDiv.innerHTML = plants.map(p => {
-                    // Build Image URL (Wikipedia Redirect)
+                    // 1. Build Image URL
                     const rawImg = (p.image_url || "").trim().replace(/\s/g, '_');
                     const imgUrl = rawImg ? `https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/${encodeURIComponent(rawImg)}&width=500` : 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
 
+                    // 2. WATCHLIST LOGIC
+                    let warningHTML = '';
+                    const sName = p.scientific_name || "";
+
+                    if (sName.includes("Fraxinus")) {
+                        warningHTML = `<div class="bg-red-600 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ High Risk: Emerald Ash Borer</div>`;
+                    } else if (sName.includes("Ulmus")) {
+                        warningHTML = `<div class="bg-red-600 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Dutch Elm Disease</div>`;
+                    } else if (sName.includes("Cornus florida")) {
+                        warningHTML = `<div class="bg-orange-600 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Dogwood Anthracnose</div>`;
+                    } else if (sName.includes("Sassafras")) {
+                        warningHTML = `<div class="bg-orange-600 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Laurel Wilt Disease</div>`;
+                    } else if (sName.includes("Tsuga")) {
+                        warningHTML = `<div class="bg-red-600 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ High Risk: Hemlock Woolly Adelgid</div>`;
+                    } else if (sName.includes("Castanea dentata")) {
+                        warningHTML = `<div class="bg-red-600 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ High Risk: Chestnut Blight</div>`;
+                    }
+
+                    // 3. RETURN FULL CARD HTML
                     return `
-                    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-xl transition-all group">
+                    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-xl transition-all group relative">
+                        ${warningHTML}
                         <div class="h-52 bg-stone-200">
                             <img src="${imgUrl}" onerror="this.src='https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                         </div>
@@ -151,7 +164,7 @@
                                 </div>
                                 <div class="bg-stone-50 p-2 rounded-xl text-center">
                                     <p class="text-[8px] font-bold text-stone-400 uppercase">Salt</p>
-                                    <p class="text-[10px] font-black text-emerald-800 uppercase">${p.salt_tolerance || 'None'}</p>
+                                    <p class="text-[10px] font-black text-emerald-800 uppercase">${p.salt_tolerance || 'Low/None'}</p>
                                 </div>
                             </div>
                         </div>
@@ -166,5 +179,7 @@
         }
     }
 </script>
+
+
 </body>
 </html>
