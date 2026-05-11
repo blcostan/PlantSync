@@ -120,29 +120,29 @@
 
             if (plants && plants.length > 0) {
                 resultsDiv.innerHTML = plants.map(p => {
-                    // 1. Build Image URL
                     const rawImg = (p.image_url || "").trim().replace(/\s/g, '_');
                     const imgUrl = rawImg ? `https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/${encodeURIComponent(rawImg)}&width=500` : 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
 
-                    // 2. WATCHLIST LOGIC
+                    // 2. WATCHLIST LOGIC (Cleaned & Unified)
                     let warningHTML = '';
                     const sName = p.scientific_name || "";
 
                     if (sName.includes("Fraxinus")) {
-                        warningHTML = `<div class="bg-red-600 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Emerald Ash Borer</div>`;
+                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Emerald Ash Borer</div>`;
                     } else if (sName.includes("Ulmus")) {
-                        warningHTML = `<div class="bg-red-600 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Dutch Elm Disease</div>`;
+                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Dutch Elm Disease</div>`;
                     } else if (sName.includes("Cornus florida")) {
-                        warningHTML = `<div class="bg-orange-600 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Dogwood Anthracnose</div>`;
+                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Dogwood Anthracnose</div>`;
                     } else if (sName.includes("Sassafras")) {
-                        warningHTML = `<div class="bg-orange-600 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Laurel Wilt Disease</div>`;
+                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Laurel Wilt Disease</div>`;
                     } else if (sName.includes("Tsuga")) {
-                        warningHTML = `<div class="bg-red-600 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Hemlock Woolly Adelgid</div>`;
+                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Hemlock Woolly Adelgid</div>`;
                     } else if (sName.includes("Castanea dentata")) {
-                        warningHTML = `<div class="bg-red-600 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Chestnut Blight</div>`;
+                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Chestnut Blight</div>`;
+                    } else if (sName.includes("Fagus")) {
+                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Beech Leaf Disease</div>`;
                     }
 
-                    // 3. RETURN FULL CARD HTML
                     return `
                     <div class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-xl transition-all group relative">
                         ${warningHTML}
