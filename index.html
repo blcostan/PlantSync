@@ -7,82 +7,72 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;900&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Outfit', sans-serif; }
-    </style>
+    <style>body { font-family: 'Outfit', sans-serif; }</style>
 </head>
 <body class="bg-stone-100 min-h-screen p-4 md:p-8">
 
 <div class="max-w-6xl mx-auto bg-white p-6 md:p-10 rounded-[2rem] shadow-2xl">
-    
     <div class="mb-10 border-b border-stone-100 pb-8">
         <h1 class="text-4xl font-black text-emerald-950 italic">PlantSync <span class="text-emerald-500 not-italic font-light text-xl tracking-widest ml-2 uppercase">Restoration Pro</span></h1>
         <p class="text-stone-500 mt-2 font-medium">Ecological Analysis & Species Selection Tool</p>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-        
         <div>
             <label class="block text-[10px] font-black text-emerald-900 uppercase mb-2 tracking-widest">Site Hydrology</label>
-            <select id="s-hydrology" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 focus:ring-2 ring-emerald-500 outline-none font-semibold text-stone-700">
+            <select id="s-hydrology" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 font-semibold text-stone-700">
                 <option value="">Any Hydrology</option>
                 <option value="Wetland">Wetland (Hydric)</option>
                 <option value="Mesic">Mesic (Moist)</option>
                 <option value="Upland">Upland (Dry)</option>
             </select>
         </div>
-
         <div>
             <label class="block text-[10px] font-black text-emerald-900 uppercase mb-2 tracking-widest">Salt Tolerance</label>
-            <select id="s-salt" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 focus:ring-2 ring-emerald-500 outline-none font-semibold text-stone-700">
+            <select id="s-salt" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 font-semibold text-stone-700">
                 <option value="">Any Tolerance</option>
-                <option value="High">High (Salt Marsh)</option>
-                <option value="Moderate">Moderate (Coastal)</option>
-                <option value="Low/None">Low/None (Inland)</option>
+                <option value="High">High</option>
+                <option value="Moderate">Moderate</option>
+                <option value="Low/None">Low/None</option>
             </select>
         </div>
-
         <div>
             <label class="block text-[10px] font-black text-emerald-900 uppercase mb-2 tracking-widest">Hardiness Zone</label>
-            <select id="s-zone" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 focus:ring-2 ring-emerald-500 outline-none font-semibold text-stone-700">
+            <select id="s-zone" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 font-semibold text-stone-700">
                 <option value="">Any Zone</option>
-                <option value="6">USDA Zone 6</option>
-                <option value="7">USDA Zone 7</option>
-                <option value="8">USDA Zone 8</option>
-                <option value="9">USDA Zone 9</option>
+                <option value="6">Zone 6</option>
+                <option value="7">Zone 7</option>
+                <option value="8">Zone 8</option>
+                <option value="9">Zone 9</option>
             </select>
         </div>
-
         <div>
             <label class="block text-[10px] font-black text-emerald-900 uppercase mb-2 tracking-widest">Sunlight</label>
-            <select id="s-sun" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 focus:ring-2 ring-emerald-500 outline-none font-semibold text-stone-700">
+            <select id="s-sun" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 font-semibold text-stone-700">
                 <option value="">Any Exposure</option>
                 <option value="Full Sun">Full Sun</option>
                 <option value="Part Shade">Part Shade</option>
                 <option value="Full Shade">Full Shade</option>
             </select>
         </div>
-
         <div>
             <label class="block text-[10px] font-black text-emerald-900 uppercase mb-2 tracking-widest">Vegetative Stratum</label>
-            <select id="s-habit" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 focus:ring-2 ring-emerald-500 outline-none font-semibold text-stone-700">
+            <select id="s-habit" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 font-semibold text-stone-700">
                 <option value="">All Strata</option>
                 <option value="Tree">Canopy (Tree)</option>
                 <option value="Shrub">Understory (Shrub)</option>
-                <option value="Herb">Herbaceous (Wildflower/Fern)</option>
+                <option value="Herb">Herbaceous</option>
             </select>
         </div>
-
         <div>
             <label class="block text-[10px] font-black text-emerald-900 uppercase mb-2 tracking-widest">Soil Texture</label>
-            <select id="s-soil" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 focus:ring-2 ring-emerald-500 outline-none font-semibold text-stone-700">
+            <select id="s-soil" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 font-semibold text-stone-700">
                 <option value="">Any Texture</option>
-                <option value="Clay">Clay (Heavy)</option>
-                <option value="Loam">Loam (Balanced)</option>
-                <option value="Sand">Sand (Well-Drained)</option>
+                <option value="Clay">Clay</option>
+                <option value="Loam">Loam</option>
+                <option value="Sand">Sand</option>
             </select>
         </div>
-
     </div>
     
     <button id="search-btn" class="w-full bg-emerald-800 text-white font-black py-5 rounded-2xl hover:bg-emerald-900 transition-all shadow-xl active:scale-[0.98] text-lg uppercase tracking-widest mb-16">
@@ -90,21 +80,17 @@
     </button>
 
     <div id="results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <p class="col-span-full text-center text-stone-400 py-20 font-medium italic border-2 border-dashed border-stone-100 rounded-3xl">Adjust filters and click search to analyze the database.</p>
+        <p class="col-span-full text-center text-stone-400 py-20 font-medium italic border-2 border-dashed border-stone-100 rounded-3xl">Adjust filters and click search.</p>
     </div>
 </div>
 
 <script>
-    // 1. SUPABASE SETUP
     const supabaseUrl = 'https://trsllhyggngbnorfcdip.supabase.co';
     const supabaseKey = 'sb_publishable_k6e3Uu9GYAtWv1FNDuZQLg_zFJHX9Kz';
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // 2. SEARCH FUNCTION
     async function findplants() {
         const resultsDiv = document.getElementById('results');
-        
-        // Get values from dropdowns
         const hydro = document.getElementById('s-hydrology').value;
         const salt = document.getElementById('s-salt').value;
         const sun = document.getElementById('s-sun').value;
@@ -113,14 +99,12 @@
         const zValue = document.getElementById('s-zone').value;
         const z = zValue ? parseInt(zValue) : NaN;
 
-        resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 text-emerald-700 font-bold animate-pulse uppercase tracking-widest">Running Site Analysis...</div>`;
+        resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 text-emerald-700 font-bold animate-pulse">SEARCHING DATABASE...</div>`;
 
         try {
             let query = _supabase.from('plants').select('*');
 
-            // Apply Filters with "Any" Logic
-            // Using 'soil_types' based on your database header
-            
+            // Logic: Match the choice OR match "Any"
             if (hydro) {
                 query = query.or(`Hydrology.ilike.%${hydro}%,Hydrology.ilike.%Any%`);
             }
@@ -131,6 +115,7 @@
                 query = query.eq('growth_habit', habit);
             }
             if (soil) {
+                // Testing 'soil_types' (your plural version)
                 query = query.or(`soil_types.ilike.%${soil}%,soil_types.ilike.%Any%`);
             }
             if (sun) {
@@ -141,10 +126,55 @@
             }
 
             const { data: plants, error } = await query;
+            
             if (error) throw error;
 
             if (plants && plants.length > 0) {
                 resultsDiv.innerHTML = plants.map(p => {
-                    // Image URL Handling
                     const rawImg = (p.image_url || "").trim().replace(/\s/g, '_');
-                    const imgUrl = rawImg ? `https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/${encodeURIComponent(rawImg)}&width=500` : '
+                    const imgUrl = rawImg ? `https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/${encodeURIComponent(rawImg)}&width=500` : 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
+                    
+                    // Display either soil_types or soil_type based on what exists
+                    const displaySoil = p.soil_types || p.soil_type || 'Any';
+
+                    return `
+                    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-xl transition-all group">
+                        <div class="h-52 bg-stone-200">
+                            <img src="${imgUrl}" onerror="this.src='https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';" class="w-full h-full object-cover group-hover:scale-105 transition-all">
+                        </div>
+                        <div class="p-6 flex flex-col flex-grow">
+                            <div class="flex justify-between items-center text-[9px] font-black text-emerald-600 mb-3 uppercase tracking-widest">
+                                <span>${p.growth_habit || 'Species'}</span>
+                                <span class="px-2 py-1 bg-emerald-50 rounded-lg">Zone ${p.zone_min}-${p.zone_max}</span>
+                            </div>
+                            <h3 class="font-black text-xl text-stone-900 leading-tight mb-1">${p.common_name}</h3>
+                            <p class="text-xs italic text-stone-400 mb-6 font-medium">${p.scientific_name}</p>
+                            <div class="mt-auto grid grid-cols-2 gap-2 pt-4 border-t border-stone-50">
+                                <div class="bg-stone-50 p-2 rounded-xl text-center">
+                                    <p class="text-[8px] font-bold text-stone-400 uppercase">Hydrology</p>
+                                    <p class="text-[10px] font-black text-emerald-800 uppercase">${p.Hydrology || 'Any'}</p>
+                                </div>
+                                <div class="bg-stone-50 p-2 rounded-xl text-center">
+                                    <p class="text-[8px] font-bold text-stone-400 uppercase">Soil</p>
+                                    <p class="text-[10px] font-black text-emerald-800 uppercase">${displaySoil}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('');
+            } else {
+                resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 text-stone-400 font-bold border-2 border-dashed border-stone-100 rounded-3xl">No species found. Try broader filters.</div>`;
+            }
+        } catch (err) {
+            console.error(err);
+            resultsDiv.innerHTML = `<div class="col-span-full text-center text-red-500 bg-red-50 p-6 rounded-2xl border border-red-100 font-mono text-xs italic">
+                <strong>COLUMN ERROR:</strong> Could not find column 'soil_types'. <br>
+                Try renaming your Supabase column to 'soil_types' or change the code to 'soil_type'.
+            </div>`;
+        }
+    }
+
+    document.getElementById('search-btn').addEventListener('click', findplants);
+</script>
+</body>
+</html>
