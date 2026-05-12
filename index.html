@@ -44,14 +44,10 @@
             <label class="block text-[10px] font-black text-emerald-900 uppercase mb-2 tracking-widest">Hardiness Zone</label>
             <select id="s-zone" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 focus:ring-2 ring-emerald-500 outline-none font-semibold text-stone-700">
                 <option value="">Any Zone</option>
-                <option value="3">USDA Zone 3</option>
-                <option value="4">USDA Zone 4</option>
-                <option value="5">USDA Zone 5</option>
                 <option value="6">USDA Zone 6</option>
                 <option value="7">USDA Zone 7</option>
                 <option value="8">USDA Zone 8</option>
                 <option value="9">USDA Zone 9</option>
-                <option value="10">USDA Zone 10</option>
             </select>
         </div>
 
@@ -65,15 +61,26 @@
             </select>
         </div>
 
-      <div>
-    <label class="block text-[10px] font-black text-emerald-900 uppercase mb-2 tracking-widest">Vegetative Stratum</label>
-    <select id="s-habit" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 focus:ring-2 ring-emerald-500 outline-none font-semibold text-stone-700">
-        <option value="">All Strata</option>
-        <option value="Tree">Canopy (Tree)</option>
-        <option value="Shrub">Understory (Shrub)</option>
-        <option value="Herb">Herbaceous (Wildflower/Fern)</option>
-    </select>
-</div>
+        <div>
+            <label class="block text-[10px] font-black text-emerald-900 uppercase mb-2 tracking-widest">Vegetative Stratum</label>
+            <select id="s-habit" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 focus:ring-2 ring-emerald-500 outline-none font-semibold text-stone-700">
+                <option value="">All Strata</option>
+                <option value="Tree">Canopy (Tree)</option>
+                <option value="Shrub">Understory (Shrub)</option>
+                <option value="Herb">Herbaceous (Wildflower/Fern)</option>
+            </select>
+        </div>
+
+        <div>
+            <label class="block text-[10px] font-black text-emerald-900 uppercase mb-2 tracking-widest">Soil Texture</label>
+            <select id="s-soil" class="w-full p-4 bg-stone-50 rounded-2xl border border-stone-200 focus:ring-2 ring-emerald-500 outline-none font-semibold text-stone-700">
+                <option value="">Any Texture</option>
+                <option value="Clay">Clay (Heavy)</option>
+                <option value="Loam">Loam (Balanced)</option>
+                <option value="Sand">Sand (Well-Drained)</option>
+            </select>
+        </div>
+
     </div>
     
     <button id="search-btn" class="w-full bg-emerald-800 text-white font-black py-5 rounded-2xl hover:bg-emerald-900 transition-all shadow-xl active:scale-[0.98] text-lg uppercase tracking-widest mb-16">
@@ -84,6 +91,7 @@
         <p class="col-span-full text-center text-stone-400 py-20 font-medium italic border-2 border-dashed border-stone-100 rounded-3xl">Adjust filters and click search to analyze the database.</p>
     </div>
 </div>
+
 <script>
     const supabaseUrl = 'https://trsllhyggngbnorfcdip.supabase.co';
     const supabaseKey = 'sb_publishable_k6e3Uu9GYAtWv1FNDuZQLg_zFJHX9Kz';
@@ -94,10 +102,12 @@
     async function findplants() {
         const resultsDiv = document.getElementById('results');
         
+        // 1. Capture Values (Including new Soil value)
         const hydro = document.getElementById('s-hydrology').value;
         const salt = document.getElementById('s-salt').value;
         const sun = document.getElementById('s-sun').value;
         const habit = document.getElementById('s-habit').value;
+        const soil = document.getElementById('s-soil').value; // <--- ADDED
         const zValue = document.getElementById('s-zone').value;
         const z = zValue ? parseInt(zValue) : NaN;
 
@@ -106,9 +116,11 @@
         try {
             let query = _supabase.from('plants').select('*');
 
+            // 2. Apply logic-based filters
             if (hydro) query = query.eq('Hydrology', hydro);
             if (salt)  query = query.eq('salt_tolerance', salt);
             if (habit) query = query.eq('growth_habit', habit);
+            if (soil)  query = query.ilike('soil_type', `%${soil}%`); // <--- ADDED
             if (sun)   query = query.ilike('sunlight_tags', `%${sun}%`);
             
             if (!isNaN(z)) {
@@ -123,7 +135,7 @@
                     const rawImg = (p.image_url || "").trim().replace(/\s/g, '_');
                     const imgUrl = rawImg ? `https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/${encodeURIComponent(rawImg)}&width=500` : 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
 
-                    // 2. WATCHLIST LOGIC (Cleaned & Unified)
+                    // 3. Watchlist Alerts
                     let warningHTML = '';
                     const sName = p.scientific_name || "";
 
@@ -137,8 +149,6 @@
                         warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Laurel Wilt Disease</div>`;
                     } else if (sName.includes("Tsuga")) {
                         warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Hemlock Woolly Adelgid</div>`;
-                    } else if (sName.includes("Castanea dentata")) {
-                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Chestnut Blight</div>`;
                     } else if (sName.includes("Fagus")) {
                         warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Beech Leaf Disease</div>`;
                     }
@@ -163,15 +173,15 @@
                                     <p class="text-[10px] font-black text-emerald-800 uppercase">${p.Hydrology || 'Mesic'}</p>
                                 </div>
                                 <div class="bg-stone-50 p-2 rounded-xl text-center">
-                                    <p class="text-[8px] font-bold text-stone-400 uppercase">Salt</p>
-                                    <p class="text-[10px] font-black text-emerald-800 uppercase">${p.salt_tolerance || 'Low/None'}</p>
+                                    <p class="text-[8px] font-bold text-stone-400 uppercase">Soil Texture</p>
+                                    <p class="text-[10px] font-black text-emerald-800 uppercase">${p.soil_type || 'Common'}</p>
                                 </div>
                             </div>
                         </div>
                     </div>`;
                 }).join('');
             } else {
-                resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 text-stone-400 font-bold border-2 border-dashed border-stone-100 rounded-3xl">No species match these criteria in the current database.</div>`;
+                resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 text-stone-400 font-bold border-2 border-dashed border-stone-100 rounded-3xl">No species match these criteria.</div>`;
             }
         } catch (err) {
             console.error("Supabase Error:", err);
@@ -179,7 +189,5 @@
         }
     }
 </script>
-
-
 </body>
 </html>
