@@ -120,7 +120,7 @@
             if (hydro) query = query.eq('Hydrology', hydro);
             if (salt)  query = query.eq('salt_tolerance', salt);
             if (habit) query = query.eq('growth_habit', habit);
-            if (soil)  query = query.ilike('soil_type', `%${soil}%`); // <--- ADDED
+            if (soil)  query = query.ilike('soil_types', `%${soil}%`); // <--- ADDED
             if (sun)   query = query.ilike('sunlight_tags', `%${sun}%`);
             
             if (!isNaN(z)) {
@@ -174,7 +174,7 @@
                                 </div>
                                 <div class="bg-stone-50 p-2 rounded-xl text-center">
                                     <p class="text-[8px] font-bold text-stone-400 uppercase">Soil Texture</p>
-                                    <p class="text-[10px] font-black text-emerald-800 uppercase">${p.soil_type || 'Common'}</p>
+                                    <p class="text-[10px] font-black text-emerald-800 uppercase">${p.soil_types || 'Common'}</p>
                                 </div>
                             </div>
                         </div>
