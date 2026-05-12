@@ -93,6 +93,7 @@
 </div>
 
 <script>
+    // Database Configuration
     const supabaseUrl = 'https://trsllhyggngbnorfcdip.supabase.co';
     const supabaseKey = 'sb_publishable_k6e3Uu9GYAtWv1FNDuZQLg_zFJHX9Kz';
     const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
@@ -102,6 +103,7 @@
     async function findplants() {
         const resultsDiv = document.getElementById('results');
         
+        // 1. Capture User Inputs
         const hydro = document.getElementById('s-hydrology').value;
         const salt = document.getElementById('s-salt').value;
         const sun = document.getElementById('s-sun').value;
@@ -115,23 +117,22 @@
         try {
             let query = _supabase.from('plants').select('*');
 
-            // --- SMART FILTER LOGIC (Includes "Any" automatically) ---
-            
+            // 2. Apply Filters (Including "Any" logic for Generalist species)
             if (hydro) {
-                // Returns rows that match chosen hydrology OR say "Any"
                 query = query.or(`Hydrology.ilike.%${hydro}%,Hydrology.eq.Any`);
             }
-
-            if (salt)  query = query.eq('salt_tolerance', salt);
-            if (habit) query = query.eq('growth_habit', habit);
-
+            if (salt) {
+                query = query.eq('salt_tolerance', salt);
+            }
+            if (habit) {
+                query = query.eq('growth_habit', habit);
+            }
             if (soil) {
-                // Returns rows that match chosen soil OR say "Any"
                 query = query.or(`soil_type.ilike.%${soil}%,soil_type.eq.Any`);
             }
-
-            if (sun)   query = query.ilike('sunlight_tags', `%${sun}%`);
-            
+            if (sun) {
+                query = query.ilike('sunlight_tags', `%${sun}%`);
+            }
             if (!isNaN(z)) {
                 query = query.lte('zone_min', z).gte('zone_max', z);
             }
@@ -140,3 +141,42 @@
             if (error) throw error;
 
             if (plants && plants.length > 0) {
+                resultsDiv.innerHTML = plants.map(p => {
+                    // Image Handling
+                    const rawImg = (p.image_url || "").trim().replace(/\s/g, '_');
+                    const imgUrl = rawImg ? `https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/${encodeURIComponent(rawImg)}&width=500` : 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
+
+                    // Active NC Pathogen Risk Alerts
+                    let warningHTML = '';
+                    const sName = p.scientific_name || "";
+
+                    if (sName.includes("Fraxinus")) {
+                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Emerald Ash Borer</div>`;
+                    } else if (sName.includes("Ulmus")) {
+                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Dutch Elm Disease</div>`;
+                    } else if (sName.includes("Cornus florida")) {
+                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Dogwood Anthracnose</div>`;
+                    } else if (sName.includes("Sassafras")) {
+                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Laurel Wilt Disease</div>`;
+                    } else if (sName.includes("Tsuga")) {
+                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Hemlock Woolly Adelgid</div>`;
+                    } else if (sName.includes("Fagus")) {
+                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Beech Leaf Disease</div>`;
+                    }
+
+                    // Card Template
+                    return `
+                    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-xl transition-all group relative">
+                        ${warningHTML}
+                        <div class="h-52 bg-stone-200">
+                            <img src="${imgUrl}" onerror="this.src='https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        </div>
+                        <div class="p-6 flex flex-col flex-grow">
+                            <div class="flex justify-between items-center text-[9px] font-black text-emerald-600 mb-3 uppercase tracking-widest">
+                                <span>${p.growth_habit || 'Species'}</span>
+                                <span class="px-2 py-1 bg-emerald-50 rounded-lg">Zone ${p.zone_min}-${p.zone_max}</span>
+                            </div>
+                            <h3 class="font-black text-xl text-stone-900 leading-tight mb-1">${p.common_name}</h3>
+                            <p class="text-xs italic text-stone-400 mb-6 font-medium">${p.scientific_name}</p>
+                            
+                            <div class="mt-auto grid grid-cols-2 gap-2 pt-4 border-t
