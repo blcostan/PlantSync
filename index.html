@@ -102,12 +102,11 @@
     async function findplants() {
         const resultsDiv = document.getElementById('results');
         
-        // 1. Capture Values (Including new Soil value)
         const hydro = document.getElementById('s-hydrology').value;
         const salt = document.getElementById('s-salt').value;
         const sun = document.getElementById('s-sun').value;
         const habit = document.getElementById('s-habit').value;
-        const soil = document.getElementById('s-soil').value; // <--- ADDED
+        const soil = document.getElementById('s-soil').value;
         const zValue = document.getElementById('s-zone').value;
         const z = zValue ? parseInt(zValue) : NaN;
 
@@ -116,11 +115,21 @@
         try {
             let query = _supabase.from('plants').select('*');
 
-            // 2. Apply logic-based filters
-            if (hydro) query = query.eq('Hydrology', hydro);
+            // --- SMART FILTER LOGIC (Includes "Any" automatically) ---
+            
+            if (hydro) {
+                // Returns rows that match chosen hydrology OR say "Any"
+                query = query.or(`Hydrology.ilike.%${hydro}%,Hydrology.eq.Any`);
+            }
+
             if (salt)  query = query.eq('salt_tolerance', salt);
             if (habit) query = query.eq('growth_habit', habit);
-            if (soil)  query = query.ilike('soil_types', `%${soil}%`); // <--- ADDED
+
+            if (soil) {
+                // Returns rows that match chosen soil OR say "Any"
+                query = query.or(`soil_type.ilike.%${soil}%,soil_type.eq.Any`);
+            }
+
             if (sun)   query = query.ilike('sunlight_tags', `%${sun}%`);
             
             if (!isNaN(z)) {
@@ -131,63 +140,3 @@
             if (error) throw error;
 
             if (plants && plants.length > 0) {
-                resultsDiv.innerHTML = plants.map(p => {
-                    const rawImg = (p.image_url || "").trim().replace(/\s/g, '_');
-                    const imgUrl = rawImg ? `https://commons.wikimedia.org/w/index.php?title=Special:Redirect/file/${encodeURIComponent(rawImg)}&width=500` : 'https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';
-
-                    // 3. Watchlist Alerts
-                    let warningHTML = '';
-                    const sName = p.scientific_name || "";
-
-                    if (sName.includes("Fraxinus")) {
-                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Emerald Ash Borer</div>`;
-                    } else if (sName.includes("Ulmus")) {
-                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Dutch Elm Disease</div>`;
-                    } else if (sName.includes("Cornus florida")) {
-                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Dogwood Anthracnose</div>`;
-                    } else if (sName.includes("Sassafras")) {
-                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Laurel Wilt Disease</div>`;
-                    } else if (sName.includes("Tsuga")) {
-                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Hemlock Woolly Adelgid</div>`;
-                    } else if (sName.includes("Fagus")) {
-                        warningHTML = `<div class="bg-stone-700 text-white text-[9px] font-black px-3 py-1 uppercase tracking-tighter w-full text-center">⚠️ Risk: Beech Leaf Disease</div>`;
-                    }
-
-                    return `
-                    <div class="bg-white rounded-3xl border border-stone-100 shadow-sm overflow-hidden flex flex-col h-full hover:shadow-xl transition-all group relative">
-                        ${warningHTML}
-                        <div class="h-52 bg-stone-200">
-                            <img src="${imgUrl}" onerror="this.src='https://images.unsplash.com/photo-1545239351-1141bd82e8a6?q=80&w=400';" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                        </div>
-                        <div class="p-6 flex flex-col flex-grow">
-                            <div class="flex justify-between items-center text-[9px] font-black text-emerald-600 mb-3 uppercase tracking-widest">
-                                <span>${p.growth_habit || 'Species'}</span>
-                                <span class="px-2 py-1 bg-emerald-50 rounded-lg">Zone ${p.zone_min}-${p.zone_max}</span>
-                            </div>
-                            <h3 class="font-black text-xl text-stone-900 leading-tight mb-1">${p.common_name}</h3>
-                            <p class="text-xs italic text-stone-400 mb-6 font-medium">${p.scientific_name}</p>
-                            
-                            <div class="mt-auto grid grid-cols-2 gap-2 pt-4 border-t border-stone-50">
-                                <div class="bg-stone-50 p-2 rounded-xl text-center">
-                                    <p class="text-[8px] font-bold text-stone-400 uppercase">Hydrology</p>
-                                    <p class="text-[10px] font-black text-emerald-800 uppercase">${p.Hydrology || 'Mesic'}</p>
-                                </div>
-                                <div class="bg-stone-50 p-2 rounded-xl text-center">
-                                    <p class="text-[8px] font-bold text-stone-400 uppercase">Soil Texture</p>
-                                    <p class="text-[10px] font-black text-emerald-800 uppercase">${p.soil_types || 'Common'}</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>`;
-                }).join('');
-            } else {
-                resultsDiv.innerHTML = `<div class="col-span-full text-center py-20 text-stone-400 font-bold border-2 border-dashed border-stone-100 rounded-3xl">No species match these criteria.</div>`;
-            }
-        } catch (err) {
-            console.error("Supabase Error:", err);
-            resultsDiv.innerHTML = `<div class="col-span-full text-center text-red-500 bg-red-50 p-6 rounded-2xl border border-red-100 font-mono text-xs"><strong>DATABASE ERROR:</strong><br>${err.message}</div>`;
-        }
-    }
-</script>
-</body>
-</html>
